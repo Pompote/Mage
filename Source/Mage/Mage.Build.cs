@@ -7,7 +7,11 @@ public class Mage : ModuleRules
 	public Mage(ReadOnlyTargetRules Target) : base(Target)
 	{
 		PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
-	
+
+		// Autorise les includes relatifs a la racine du module (ex: "Spells/GestureRecognizer.h")
+		// depuis n'importe quel sous-dossier, sans quoi seul le meme dossier que le fichier inclus est resolu.
+		PublicIncludePaths.Add(ModuleDirectory);
+
 		PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore", "EnhancedInput" });
 
 		PrivateDependencyModuleNames.AddRange(new string[] {  });
