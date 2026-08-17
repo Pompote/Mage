@@ -32,8 +32,9 @@ public:
 	TObjectPtr<UTexture2D> SourceImage;
 
 	// Points deja normalises (reechantillonnage/rotation/echelle/translation), remplis par l'outil
-	// de bake -- jamais calcules au runtime a partir de l'image.
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Gesture")
+	// de bake -- jamais calcules au runtime a partir de l'image. Lecture seule : n'est jamais cense
+	// etre rempli/modifie a la main, seulement inspecte.
+	UPROPERTY(VisibleDefaultsOnly, BlueprintReadOnly, Category = "Gesture")
 	TArray<FVector2D> NormalizedPoints;
 
 	// Seuil de reconnaissance propre a cette forme ; si <= 0, le seuil global du recognizer s'applique
@@ -45,4 +46,25 @@ public:
 
 	// Convertit vers la structure minimale attendue par IGestureRecognizer::Recognize
 	FGestureTemplate ToGestureTemplate() const;
+
+#if WITH_EDITOR
+	// Bouton dans le Details panel : extrait les pixels d'encre de SourceImage, les ordonne en un
+	// chemin (plus proche voisin), puis les normalise via le $1 Recognizer -- resultat stocke dans
+	// NormalizedPoints. Editor-only, jamais execute au runtime.
+	UFUNCTION(CallInEditor, Category = "Gesture")
+	void BakeFromImage();
+
+	// Lit les pixels de SourceImage et retourne les positions (espace image, Y vers le haut) des
+	// pixels consideres comme "encre" (sombres et opaques). Vide si l'image est absente/illisible.
+	TArray<FVector2D> ExtractInkPointsFromImage() const;
+
+	// Ne garde qu'un point representatif par cellule de la grille -- reduit la densite d'un trait
+	// epais avant le tri, sans quoi le parcours plus-proche-voisin zigzague dans la largeur du trait.
+	static TArray<FVector2D> DownsampleToGrid(const TArray<FVector2D>& Points, double CellSize);
+
+	// Ordonne un nuage de points non ordonne en un chemin, en repartant a chaque etape vers le point
+	// non visite le plus proche. Simple et suffisant pour un trait fin sans branche (Phase 1) ; pas
+	// une vraie squelettisation, ne gere pas les formes qui se croisent ou qui bifurquent.
+	static TArray<FVector2D> OrderPointsGreedy(TArray<FVector2D> Points);
+#endif
 };

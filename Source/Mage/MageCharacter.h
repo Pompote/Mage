@@ -10,6 +10,7 @@ class UCameraComponent;
 class UStaticMeshComponent;
 class UInputMappingContext;
 class UInputAction;
+class USpellDrawComponent;
 struct FInputActionValue;
 
 UCLASS()
@@ -37,6 +38,10 @@ private:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Mesh", meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UStaticMeshComponent> PlaceholderMesh;
 
+	// Capture le trace souris pendant le dessin de sorts et le fait reconnaitre
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Spells", meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<USpellDrawComponent> SpellDrawComponent;
+
 	// Assets d'input Enhanced Input, a assigner dans l'editeur (Blueprint enfant conseille)
 	UPROPERTY(EditDefaultsOnly, Category = "Input")
 	TObjectPtr<UInputMappingContext> DefaultMappingContext;
@@ -49,6 +54,10 @@ private:
 
 	UPROPERTY(EditDefaultsOnly, Category = "Input")
 	TObjectPtr<UInputAction> JumpAction;
+
+	// Digital (bool) : presse pour commencer a dessiner, relache pour reconnaitre le trace
+	UPROPERTY(EditDefaultsOnly, Category = "Input")
+	TObjectPtr<UInputAction> DrawAction;
 
 	void Move(const FInputActionValue& Value);
 	void Look(const FInputActionValue& Value);

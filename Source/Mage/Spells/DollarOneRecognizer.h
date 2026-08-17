@@ -43,6 +43,13 @@ protected:
 private:
 	static double PathLength(const TArray<FVector2D>& Points);
 	static TArray<FVector2D> Resample(const TArray<FVector2D>& Points, int32 N);
+
+	// $1 n'est invariant qu'a la rotation/echelle, pas au sens de parcours (horaire/anti-horaire) --
+	// un meme cercle trace dans les deux sens produirait des tres mauvais scores l'un contre l'autre
+	// sans ca. Force systematiquement le sens anti-horaire (aire signee du polygone, formule du
+	// lacet) pour que le sens de tracé du joueur n'ait plus d'importance.
+	static TArray<FVector2D> CanonicalizeWindingOrder(const TArray<FVector2D>& Points);
+
 	static FVector2D Centroid(const TArray<FVector2D>& Points);
 	static TArray<FVector2D> RotateBy(const TArray<FVector2D>& Points, double Radians);
 	static double IndicativeAngle(const TArray<FVector2D>& Points);

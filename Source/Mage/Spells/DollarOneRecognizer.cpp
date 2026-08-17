@@ -12,6 +12,36 @@ double UDollarOneRecognizer::PathLength(const TArray<FVector2D>& Points)
 	return Length;
 }
 
+TArray<FVector2D> UDollarOneRecognizer::CanonicalizeWindingOrder(const TArray<FVector2D>& Points)
+{
+	if (Points.Num() < 3)
+	{
+		return Points;
+	}
+
+	// Formule du lacet (shoelace) : signe positif = anti-horaire, negatif = horaire
+	double SignedArea = 0.0;
+	for (int32 Index = 0; Index < Points.Num(); ++Index)
+	{
+		const FVector2D& Current = Points[Index];
+		const FVector2D& Next = Points[(Index + 1) % Points.Num()];
+		SignedArea += (Current.X * Next.Y) - (Next.X * Current.Y);
+	}
+
+	if (SignedArea >= 0.0)
+	{
+		return Points;
+	}
+
+	TArray<FVector2D> Reversed;
+	Reversed.Reserve(Points.Num());
+	for (int32 Index = Points.Num() - 1; Index >= 0; --Index)
+	{
+		Reversed.Add(Points[Index]);
+	}
+	return Reversed;
+}
+
 TArray<FVector2D> UDollarOneRecognizer::Resample(const TArray<FVector2D>& Points, int32 N)
 {
 	TArray<FVector2D> Source = Points;
@@ -164,6 +194,7 @@ TArray<FVector2D> UDollarOneRecognizer::Normalize(const TArray<FVector2D>& RawPo
 	}
 
 	TArray<FVector2D> Points = Resample(RawPoints, NumResamplePoints);
+	Points = CanonicalizeWindingOrder(Points);
 	const double Angle = IndicativeAngle(Points);
 	Points = RotateBy(Points, -Angle);
 	Points = ScaleToSquare(Points, SquareSize);
@@ -228,7 +259,7 @@ FGestureRecognitionResult UDollarOneRecognizer::Recognize(const TArray<FVector2D
 	const double HalfDiagonal = 0.5 * FMath::Sqrt(2.0) * static_cast<double>(SquareSize);
 
 	double BestDistance = TNumericLimits<double>::Max();
-	FName BestId = NAME_None;
+	const FGestureTemplate* BestTemplate = nullptr;
 
 	for (const FGestureTemplate& Template : Templates)
 	{
@@ -236,15 +267,23 @@ FGestureRecognitionResult UDollarOneRecognizer::Recognize(const TArray<FVector2D
 		if (Distance < BestDistance)
 		{
 			BestDistance = Distance;
-			BestId = Template.Id;
+			BestTemplate = &Template;
 		}
 	}
 
 	const double Score = 1.0 - (BestDistance / HalfDiagonal);
 
-	Result.TemplateId = BestId;
+	// Le template gagnant peut imposer son propre seuil (ex: forme facilement confondue avec une
+	// autre) ; <= 0 signifie qu'il n'en definit pas et que le seuil global du recognizer s'applique.
+	double ThresholdToUse = static_cast<double>(RecognitionThreshold);
+	if (BestTemplate && BestTemplate->RecognitionThresholdOverride > 0.f)
+	{
+		ThresholdToUse = static_cast<double>(BestTemplate->RecognitionThresholdOverride);
+	}
+
+	Result.TemplateId = BestTemplate ? BestTemplate->Id : NAME_None;
 	Result.Score = static_cast<float>(Score);
-	Result.bMatched = Score >= static_cast<double>(RecognitionThreshold);
+	Result.bMatched = Score >= ThresholdToUse;
 
 	return Result;
 }

@@ -17,6 +17,10 @@ struct FGestureTemplate
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Gesture")
 	TArray<FVector2D> NormalizedPoints;
+
+	// Seuil de reconnaissance propre a cette forme (0-1) ; <= 0 signifie "utiliser le seuil global du recognizer"
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Gesture")
+	float RecognitionThresholdOverride = -1.f;
 };
 
 USTRUCT(BlueprintType)

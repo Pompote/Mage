@@ -39,6 +39,17 @@ namespace DollarOneTestHelpers
 		return Points;
 	}
 
+	static TArray<FVector2D> ReversePoints(const TArray<FVector2D>& Points)
+	{
+		TArray<FVector2D> Result;
+		Result.Reserve(Points.Num());
+		for (int32 Index = Points.Num() - 1; Index >= 0; --Index)
+		{
+			Result.Add(Points[Index]);
+		}
+		return Result;
+	}
+
 	static TArray<FVector2D> RotatePointsDegrees(const TArray<FVector2D>& Points, double Degrees)
 	{
 		const double Angle = FMath::DegreesToRadians(Degrees);
@@ -94,6 +105,49 @@ bool FDollarOneRecognizerTest::RunTest(const FString& Parameters)
 		const FGestureRecognitionResult Result = Recognizer->Recognize(RotatedSquare, Templates);
 		TestEqual(TEXT("Un carre tourne de 20 degres doit toujours reconnaitre Square"), Result.TemplateId, FName(TEXT("Square")));
 		TestTrue(TEXT("Le score doit rester au-dessus du seuil malgre la rotation"), Result.bMatched);
+	}
+
+	// Invariance au sens de parcours : un cercle trace dans le sens horaire (points inverses) doit
+	// toujours reconnaitre Circle. $1 n'est nativement invariant qu'a la rotation/echelle, pas au
+	// sens de tracé -- sans CanonicalizeWindingOrder, ce cas produit un tres mauvais score malgre
+	// une forme geometriquement identique (constate avec une vraie image bakee, score tombe a 0.1).
+	{
+		const TArray<FVector2D> ClockwiseCircle = ReversePoints(MakeCircle(90.0, 50));
+		const FGestureRecognitionResult Result = Recognizer->Recognize(ClockwiseCircle, Templates);
+		TestEqual(TEXT("Un cercle trace en sens horaire doit toujours reconnaitre Circle"), Result.TemplateId, FName(TEXT("Circle")));
+		TestTrue(TEXT("Le score doit rester au-dessus du seuil malgre l'inversion de sens"), Result.bMatched);
+	}
+
+	// RecognitionThresholdOverride : un seuil impossible a atteindre sur le template gagnant doit
+	// empecher le match, meme sur un trace identique au template (score maximal, 1.0)
+	{
+		FGestureTemplate StrictCircle;
+		StrictCircle.Id = TEXT("StrictCircle");
+		StrictCircle.NormalizedPoints = Recognizer->Normalize(MakeCircle(100.0, 64));
+		StrictCircle.RecognitionThresholdOverride = 1.5f;
+
+		const TArray<FGestureTemplate> StrictTemplates = { StrictCircle };
+		const FGestureRecognitionResult Result = Recognizer->Recognize(MakeCircle(100.0, 64), StrictTemplates);
+		TestFalse(TEXT("Un seuil impossible a atteindre empeche le match meme sur un trace parfait"), Result.bMatched);
+	}
+
+	// RecognitionThresholdOverride : un seuil tres permissif sur le template gagnant doit permettre
+	// le match meme avec un score bas (ici une ligne droite comparee a un cercle)
+	{
+		FGestureTemplate LenientCircle;
+		LenientCircle.Id = TEXT("LenientCircle");
+		LenientCircle.NormalizedPoints = Recognizer->Normalize(MakeCircle(100.0, 64));
+		LenientCircle.RecognitionThresholdOverride = 0.01f;
+
+		TArray<FVector2D> StraightLine;
+		for (int32 Index = 0; Index < 20; ++Index)
+		{
+			StraightLine.Add(FVector2D(static_cast<double>(Index) * 5.0, 0.0));
+		}
+
+		const TArray<FGestureTemplate> LenientTemplates = { LenientCircle };
+		const FGestureRecognitionResult Result = Recognizer->Recognize(StraightLine, LenientTemplates);
+		TestTrue(TEXT("Un seuil tres permissif permet un match meme avec un score bas"), Result.bMatched);
 	}
 
 	return true;

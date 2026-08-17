@@ -8,6 +8,7 @@
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
 #include "InputActionValue.h"
+#include "Spells/SpellDrawComponent.h"
 #include "UObject/ConstructorHelpers.h"
 
 // Sets default values
@@ -43,6 +44,8 @@ AMageCharacter::AMageCharacter()
 	{
 		PlaceholderMesh->SetStaticMesh(CapsuleMeshAsset.Object);
 	}
+
+	SpellDrawComponent = CreateDefaultSubobject<USpellDrawComponent>(TEXT("SpellDrawComponent"));
 }
 
 // Called when the game starts or when spawned
@@ -82,6 +85,11 @@ void AMageCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompo
 			EnhancedInput->BindAction(JumpAction, ETriggerEvent::Triggered, this, &ACharacter::Jump);
 			EnhancedInput->BindAction(JumpAction, ETriggerEvent::Completed, this, &ACharacter::StopJumping);
 		}
+		if (DrawAction && SpellDrawComponent)
+		{
+			EnhancedInput->BindAction(DrawAction, ETriggerEvent::Started, SpellDrawComponent.Get(), &USpellDrawComponent::BeginStroke);
+			EnhancedInput->BindAction(DrawAction, ETriggerEvent::Completed, SpellDrawComponent.Get(), &USpellDrawComponent::EndStroke);
+		}
 	}
 }
 
@@ -104,6 +112,14 @@ void AMageCharacter::Move(const FInputActionValue& Value)
 void AMageCharacter::Look(const FInputActionValue& Value)
 {
 	const FVector2D LookAxisVector = Value.Get<FVector2D>();
+
+	// Pendant un dessin, le delta souris alimente le trace plutot que la camera (lock camera pendant
+	// le dessin, voir README "Mobilite pendant le dessin")
+	if (SpellDrawComponent && SpellDrawComponent->IsDrawingStroke())
+	{
+		SpellDrawComponent->AddStrokeInput(LookAxisVector);
+		return;
+	}
 
 	if (Controller)
 	{
