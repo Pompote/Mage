@@ -40,6 +40,11 @@ void USpellDrawComponent::EndStroke()
 
 	bIsDrawingStroke = false;
 
+	if (const UWorld* EndWorld = GetWorld())
+	{
+		LastStrokeEndTimeSeconds = EndWorld->GetTimeSeconds();
+	}
+
 	if (CurrentStroke.Num() >= 2)
 	{
 		// Diagnostic temporaire : la densite du trace brut capture en jeu n'a encore jamais ete
@@ -73,4 +78,25 @@ void USpellDrawComponent::EndStroke()
 	}
 
 	CurrentStroke.Reset();
+}
+
+bool USpellDrawComponent::ShouldSuppressCameraInput() const
+{
+	if (bIsDrawingStroke)
+	{
+		return true;
+	}
+
+	if (LastStrokeEndTimeSeconds < 0.0)
+	{
+		return false;
+	}
+
+	const UWorld* World = GetWorld();
+	if (!World)
+	{
+		return false;
+	}
+
+	return (World->GetTimeSeconds() - LastStrokeEndTimeSeconds) < static_cast<double>(PostStrokeGraceSeconds);
 }

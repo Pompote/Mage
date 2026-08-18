@@ -113,11 +113,15 @@ void AMageCharacter::Look(const FInputActionValue& Value)
 {
 	const FVector2D LookAxisVector = Value.Get<FVector2D>();
 
-	// Pendant un dessin, le delta souris alimente le trace plutot que la camera (lock camera pendant
-	// le dessin, voir README "Mobilite pendant le dessin")
-	if (SpellDrawComponent && SpellDrawComponent->IsDrawingStroke())
+	// Pendant un dessin (et une courte fenetre juste apres, pour absorber le mouvement souris
+	// residuel au relachement), le delta souris alimente le trace plutot que la camera -- lock
+	// camera pendant le dessin, voir README "Mobilite pendant le dessin"
+	if (SpellDrawComponent && SpellDrawComponent->ShouldSuppressCameraInput())
 	{
-		SpellDrawComponent->AddStrokeInput(LookAxisVector);
+		if (SpellDrawComponent->IsDrawingStroke())
+		{
+			SpellDrawComponent->AddStrokeInput(LookAxisVector);
+		}
 		return;
 	}
 

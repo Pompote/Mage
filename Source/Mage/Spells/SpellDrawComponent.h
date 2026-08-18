@@ -32,6 +32,13 @@ public:
 
 	bool IsDrawingStroke() const { return bIsDrawingStroke; }
 
+	// Vrai pendant le dessin ET pendant une courte fenetre apres la fin du trace -- absorbe le
+	// mouvement souris residuel au moment du relachement (independamment de l'ordre d'evaluation
+	// entre l'action Draw et l'action Look sur la meme frame), pour eviter un a-coup de camera en
+	// fin de dessin. Le personnage doit ignorer completement l'input camera quand ceci est vrai et
+	// que IsDrawingStroke() est faux (ne pas non plus l'ajouter au trace, deja termine).
+	bool ShouldSuppressCameraInput() const;
+
 	// Points du trace en cours (espace de dessin local, origine au point de depart), pour affichage HUD
 	const TArray<FVector2D>& GetCurrentStroke() const { return CurrentStroke; }
 
@@ -45,8 +52,15 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "Spells")
 	float StrokeSensitivity = 10.f;
 
+	// Duree (secondes) pendant laquelle l'input camera reste ignore apres la fin d'un trace
+	UPROPERTY(EditAnywhere, Category = "Spells")
+	float PostStrokeGraceSeconds = 0.15f;
+
 private:
 	bool bIsDrawingStroke = false;
 	FVector2D PenPosition = FVector2D::ZeroVector;
 	TArray<FVector2D> CurrentStroke;
+
+	// < 0 tant qu'aucun trace n'a encore ete termine
+	double LastStrokeEndTimeSeconds = -1.0;
 };
