@@ -26,6 +26,9 @@ protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 
+	// Called every frame
+	virtual void Tick(float DeltaTime) override;
+
 	// Called to bind functionality to input
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
@@ -33,6 +36,37 @@ private:
 	// Camera vue a la premiere personne, collee a la tete du personnage (pas de bras de camera)
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Camera", meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UCameraComponent> FirstPersonCamera;
+
+	// Fraction (0-1) de la sensibilite camera normale encore appliquee pendant le dessin -- pour
+	// garder une legere sensation de "le mage regarde autour de lui" plutot qu'un blocage total.
+	// La fenetre de grace juste apres la fin du trace, elle, reste en coupure totale (voir
+	// USpellDrawComponent::ShouldSuppressCameraInput).
+	UPROPERTY(EditAnywhere, Category = "Camera")
+	float CameraAttenuationWhileDrawing = 0.1f;
+
+	// Tremblement qui grandit avec la duree du trace en cours (plafonne) -- amplitude gagnee par
+	// seconde de dessin
+	UPROPERTY(EditAnywhere, Category = "Camera")
+	float DrawShakeGrowthPerSecond = 0.05f;
+
+	// Plafond de l'amplitude du tremblement croissant, quelle que soit la duree du trace
+	UPROPERTY(EditAnywhere, Category = "Camera")
+	float DrawShakeMaxAmplitude = 0.3f;
+
+	// Vitesse d'oscillation du tremblement croissant
+	UPROPERTY(EditAnywhere, Category = "Camera")
+	float DrawShakeFrequency = 8.f;
+
+	// Micro-mouvements subtils en directions aleatoires, intensite constante (independante de la
+	// duree du trace), pendant tout le dessin
+	UPROPERTY(EditAnywhere, Category = "Camera")
+	float DrawMicroJitterAmplitude = 0.02f;
+
+	// Nombre de secousses aleatoires par seconde (pas a chaque frame, sinon ca ressemble a un
+	// bourdonnement continu plutot qu'a un tremblement) -- chaque secousse est une seule impulsion,
+	// tenue jusqu'a la prochaine
+	UPROPERTY(EditAnywhere, Category = "Camera")
+	float DrawMicroJitterFrequency = 15.f;
 
 	// Placeholder visuel (capsule du moteur) en attendant un vrai mesh de personnage
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Mesh", meta = (AllowPrivateAccess = "true"))
@@ -61,4 +95,7 @@ private:
 
 	void Move(const FInputActionValue& Value);
 	void Look(const FInputActionValue& Value);
+
+	// < 0 tant qu'aucune secousse n'a encore ete jouee
+	double LastJitterUpdateTimeSeconds = -1.0;
 };

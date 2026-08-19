@@ -65,6 +65,43 @@ void AMageCharacter::BeginPlay()
 	}
 }
 
+void AMageCharacter::Tick(float DeltaTime)
+{
+	Super::Tick(DeltaTime);
+
+	if (!SpellDrawComponent || !SpellDrawComponent->IsDrawingStroke() || !Controller)
+	{
+		return;
+	}
+
+	const UWorld* World = GetWorld();
+	const double Now = World ? World->GetTimeSeconds() : 0.0;
+	const double StrokeStartTime = SpellDrawComponent->GetStrokeStartTimeSeconds();
+	const float ElapsedDrawSeconds = StrokeStartTime >= 0.0 ? static_cast<float>(Now - StrokeStartTime) : 0.f;
+
+	// Tremblement qui grandit avec la duree du trace, plafonne
+	const float ShakeAmplitude = FMath::Min(DrawShakeMaxAmplitude, DrawShakeGrowthPerSecond * ElapsedDrawSeconds);
+	if (ShakeAmplitude > 0.f)
+	{
+		const float ShakePhase = static_cast<float>(Now) * DrawShakeFrequency;
+		AddControllerYawInput(FMath::Sin(ShakePhase) * ShakeAmplitude);
+		AddControllerPitchInput(FMath::Cos(ShakePhase * 1.3f) * ShakeAmplitude);
+	}
+
+	// Micro-mouvements subtils en directions aleatoires : une seule impulsion par secousse, au
+	// rythme de DrawMicroJitterFrequency (pas a chaque frame), tenue jusqu'a la prochaine
+	if (DrawMicroJitterAmplitude > 0.f && DrawMicroJitterFrequency > 0.f)
+	{
+		const double JitterInterval = 1.0 / static_cast<double>(DrawMicroJitterFrequency);
+		if (Now - LastJitterUpdateTimeSeconds >= JitterInterval)
+		{
+			LastJitterUpdateTimeSeconds = Now;
+			AddControllerYawInput(FMath::FRandRange(-DrawMicroJitterAmplitude, DrawMicroJitterAmplitude));
+			AddControllerPitchInput(FMath::FRandRange(-DrawMicroJitterAmplitude, DrawMicroJitterAmplitude));
+		}
+	}
+}
+
 // Called to bind functionality to input
 void AMageCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 {
@@ -113,15 +150,25 @@ void AMageCharacter::Look(const FInputActionValue& Value)
 {
 	const FVector2D LookAxisVector = Value.Get<FVector2D>();
 
-	// Pendant un dessin (et une courte fenetre juste apres, pour absorber le mouvement souris
-	// residuel au relachement), le delta souris alimente le trace plutot que la camera -- lock
-	// camera pendant le dessin, voir README "Mobilite pendant le dessin"
+	// Pendant un dessin, le delta souris alimente le trace ET fait tourner la camera de facon tres
+	// attenuee (pas un blocage total) -- garde la sensation que le mage regarde autour de lui
+	// pendant qu'il trace, voir README "Mobilite pendant le dessin"
+	if (SpellDrawComponent && SpellDrawComponent->IsDrawingStroke())
+	{
+		SpellDrawComponent->AddStrokeInput(LookAxisVector);
+
+		if (Controller)
+		{
+			AddControllerYawInput(LookAxisVector.X * CameraAttenuationWhileDrawing);
+			AddControllerPitchInput(LookAxisVector.Y * CameraAttenuationWhileDrawing);
+		}
+		return;
+	}
+
+	// Courte fenetre juste apres la fin du trace : coupure totale (pas d'attenuation), pour bien
+	// absorber le mouvement souris residuel au relachement plutot qu'une histoire de sensation
 	if (SpellDrawComponent && SpellDrawComponent->ShouldSuppressCameraInput())
 	{
-		if (SpellDrawComponent->IsDrawingStroke())
-		{
-			SpellDrawComponent->AddStrokeInput(LookAxisVector);
-		}
 		return;
 	}
 

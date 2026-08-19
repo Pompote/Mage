@@ -16,8 +16,15 @@ void USpellDrawComponent::BeginStroke()
 {
 	bIsDrawingStroke = true;
 	PenPosition = FVector2D::ZeroVector;
+
+	// Nettoye ici (pas a la fin du trace precedent) : le tracé reste disponible apres EndStroke le
+	// temps que l'affichage retarde finisse de le "rattraper"
 	CurrentStroke.Reset();
+	StrokeTimestamps.Reset();
+
+	const double Now = GetWorld() ? GetWorld()->GetTimeSeconds() : 0.0;
 	CurrentStroke.Add(PenPosition);
+	StrokeTimestamps.Add(Now);
 }
 
 void USpellDrawComponent::AddStrokeInput(const FVector2D& Delta)
@@ -29,6 +36,7 @@ void USpellDrawComponent::AddStrokeInput(const FVector2D& Delta)
 
 	PenPosition += Delta * StrokeSensitivity;
 	CurrentStroke.Add(PenPosition);
+	StrokeTimestamps.Add(GetWorld() ? GetWorld()->GetTimeSeconds() : 0.0);
 }
 
 void USpellDrawComponent::EndStroke()
@@ -77,7 +85,7 @@ void USpellDrawComponent::EndStroke()
 		}
 	}
 
-	CurrentStroke.Reset();
+	// Pas de reset ici : voir BeginStroke -- laisse le HUD terminer son affichage retarde
 }
 
 bool USpellDrawComponent::ShouldSuppressCameraInput() const

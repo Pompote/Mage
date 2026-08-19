@@ -39,8 +39,18 @@ public:
 	// que IsDrawingStroke() est faux (ne pas non plus l'ajouter au trace, deja termine).
 	bool ShouldSuppressCameraInput() const;
 
-	// Points du trace en cours (espace de dessin local, origine au point de depart), pour affichage HUD
+	// Points du trace en cours (espace de dessin local, origine au point de depart), pour affichage HUD.
+	// Reste disponible un court instant apres la fin du trace (voir EndStroke), pour que l'affichage
+	// retarde puisse "rattraper" la toute fin du dessin avant de disparaitre.
 	const TArray<FVector2D>& GetCurrentStroke() const { return CurrentStroke; }
+
+	// Horodatage (GetWorld()->GetTimeSeconds()) de chaque point de CurrentStroke, meme taille -- permet
+	// a l'affichage d'appliquer un delai purement visuel sans toucher aux points servant a la reconnaissance
+	const TArray<double>& GetStrokeTimestamps() const { return StrokeTimestamps; }
+
+	// Horodatage de debut du trace en cours (< 0 si aucun trace n'est en cours) -- pour un effet qui
+	// grandit avec la duree du dessin (ex: tremblement de camera de plus en plus fort)
+	double GetStrokeStartTimeSeconds() const { return StrokeTimestamps.Num() > 0 ? StrokeTimestamps[0] : -1.0; }
 
 	// Diffuse au reste du jeu le resultat d'une reconnaissance -- la couche de resolution des sorts
 	// s'y abonnera plus tard pour remplir le buffer de sorts prepares.
@@ -60,6 +70,7 @@ private:
 	bool bIsDrawingStroke = false;
 	FVector2D PenPosition = FVector2D::ZeroVector;
 	TArray<FVector2D> CurrentStroke;
+	TArray<double> StrokeTimestamps;
 
 	// < 0 tant qu'aucun trace n'a encore ete termine
 	double LastStrokeEndTimeSeconds = -1.0;
