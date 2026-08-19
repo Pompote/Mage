@@ -227,6 +227,11 @@ En fin de game, types de récompenses :
   - première map
   - 2 ennemis finis
 
+# 10. Idées/Débats
+Altérations des ennemis : Faire le shaking de cam de suivi de dessin quand le joueur est altéré 
+Doigt qui brille qui envoie un trait style faisceau jusqu'à devant l'écran 
+Sorts compliqués (multi traits) : CTRL + Clic Droit
+Sort simple : Clic droit
 ---
 
 # Environnement de développement
