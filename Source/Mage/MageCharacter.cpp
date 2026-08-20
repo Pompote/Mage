@@ -8,6 +8,7 @@
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
 #include "InputActionValue.h"
+#include "Spells/SpellBufferComponent.h"
 #include "Spells/SpellDrawComponent.h"
 #include "UObject/ConstructorHelpers.h"
 
@@ -46,6 +47,7 @@ AMageCharacter::AMageCharacter()
 	}
 
 	SpellDrawComponent = CreateDefaultSubobject<USpellDrawComponent>(TEXT("SpellDrawComponent"));
+	SpellBufferComponent = CreateDefaultSubobject<USpellBufferComponent>(TEXT("SpellBufferComponent"));
 }
 
 // Called when the game starts or when spawned
@@ -127,6 +129,15 @@ void AMageCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompo
 			EnhancedInput->BindAction(DrawAction, ETriggerEvent::Started, SpellDrawComponent.Get(), &USpellDrawComponent::BeginStroke);
 			EnhancedInput->BindAction(DrawAction, ETriggerEvent::Completed, SpellDrawComponent.Get(), &USpellDrawComponent::EndStroke);
 		}
+		if (CastSlotAction)
+		{
+			EnhancedInput->BindAction(CastSlotAction, ETriggerEvent::Started, this, &AMageCharacter::CastSlot);
+			UE_LOG(LogTemp, Log, TEXT("MageCharacter: CastSlotAction lie (%s)"), *CastSlotAction->GetName());
+		}
+		else
+		{
+			UE_LOG(LogTemp, Warning, TEXT("MageCharacter: CastSlotAction est NULL -- rien n'est assigne dans le Blueprint enfant, les touches 1/2/3 ne feront jamais rien"));
+		}
 	}
 }
 
@@ -177,4 +188,23 @@ void AMageCharacter::Look(const FInputActionValue& Value)
 		AddControllerYawInput(LookAxisVector.X);
 		AddControllerPitchInput(LookAxisVector.Y);
 	}
+}
+
+void AMageCharacter::CastSlot(const FInputActionValue& Value)
+{
+	// La touche pressee alimente cette meme Input Action avec une valeur differente (1.0/2.0/3.0)
+	// via son modificateur Scalar dans l'IMC -- on retrouve l'index d'emplacement (0-based) a partir
+	// de cette valeur.
+	const float SlotNumber = Value.Get<float>();
+	const int32 SlotIndex = FMath::RoundToInt(SlotNumber) - 1;
+
+	UE_LOG(LogTemp, Log, TEXT("MageCharacter: CastSlotAction declenche -- valeur brute=%.2f -> SlotIndex=%d"), SlotNumber, SlotIndex);
+
+	if (!SpellBufferComponent)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("MageCharacter: CastSlot ignore -- SpellBufferComponent est null"));
+		return;
+	}
+
+	SpellBufferComponent->CastSlot(SlotIndex);
 }

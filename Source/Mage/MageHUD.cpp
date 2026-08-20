@@ -4,8 +4,11 @@
 
 #include "DrawDebugHelpers.h"
 #include "Engine/Canvas.h"
+#include "Engine/Texture2D.h"
 #include "GameFramework/Pawn.h"
 #include "GameFramework/PlayerController.h"
+#include "Spells/SpellBufferComponent.h"
+#include "Spells/SpellDefinition.h"
 #include "Spells/SpellDrawComponent.h"
 
 void AMageHUD::DrawHUD()
@@ -18,6 +21,9 @@ void AMageHUD::DrawHUD()
 	}
 
 	const APawn* Pawn = PlayerOwner ? PlayerOwner->GetPawn() : nullptr;
+
+	DrawSpellBuffer(Pawn);
+
 	const USpellDrawComponent* DrawComponent = Pawn ? Pawn->FindComponentByClass<USpellDrawComponent>() : nullptr;
 
 	if (!DrawComponent || !Canvas)
@@ -135,6 +141,33 @@ FVector2D AMageHUD::GetNoiseOffset(int32 PointIndex, double CurrentTime) const
 	// purement decoratif, jamais utilise pour la reconnaissance.
 	const double Phase = PointIndex * static_cast<double>(TraceNoiseFrequency) + CurrentTime * static_cast<double>(TraceNoiseSpeed);
 	return FVector2D(FMath::Sin(Phase), FMath::Cos(Phase * 1.3)) * TraceNoiseAmplitude;
+}
+
+void AMageHUD::DrawSpellBuffer(const APawn* Pawn)
+{
+	const USpellBufferComponent* BufferComponent = Pawn ? Pawn->FindComponentByClass<USpellBufferComponent>() : nullptr;
+	if (!BufferComponent || !Canvas)
+	{
+		return;
+	}
+
+	const TArray<TObjectPtr<USpellDefinition>>& Buffered = BufferComponent->GetBufferedSpells();
+	const float StartY = Canvas->SizeY - BufferMarginFromEdge - BufferIconSize;
+
+	for (int32 Index = 0; Index < BufferComponent->MaxBufferSize; ++Index)
+	{
+		const float SlotX = BufferMarginFromEdge + Index * (BufferIconSize + BufferIconSpacing);
+
+		if (Buffered.IsValidIndex(Index) && Buffered[Index] && Buffered[Index]->Icon)
+		{
+			DrawTexture(Buffered[Index]->Icon, SlotX, StartY, BufferIconSize, BufferIconSize, 0.f, 0.f, 1.f, 1.f);
+		}
+		else
+		{
+			// Emplacement vide : simple fond sombre translucide pour marquer la place
+			DrawRect(FLinearColor(0.2f, 0.2f, 0.2f, 0.5f), SlotX, StartY, BufferIconSize, BufferIconSize);
+		}
+	}
 }
 
 void AMageHUD::DrawCrosshair(const FVector2D& Center)

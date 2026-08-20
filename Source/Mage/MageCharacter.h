@@ -11,6 +11,7 @@ class UStaticMeshComponent;
 class UInputMappingContext;
 class UInputAction;
 class USpellDrawComponent;
+class USpellBufferComponent;
 struct FInputActionValue;
 
 UCLASS()
@@ -76,6 +77,10 @@ private:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Spells", meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<USpellDrawComponent> SpellDrawComponent;
 
+	// Banque de sorts prepares (dessines mais pas encore lances) -- voir README section 4
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Spells", meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<USpellBufferComponent> SpellBufferComponent;
+
 	// Assets d'input Enhanced Input, a assigner dans l'editeur (Blueprint enfant conseille)
 	UPROPERTY(EditDefaultsOnly, Category = "Input")
 	TObjectPtr<UInputMappingContext> DefaultMappingContext;
@@ -93,8 +98,17 @@ private:
 	UPROPERTY(EditDefaultsOnly, Category = "Input")
 	TObjectPtr<UInputAction> DrawAction;
 
+	// Touches 1/2/3 : declenchent le cast reel d'un emplacement du buffer de sorts. Une seule
+	// Input Action (Axis1D/float) partagee par les 3 touches -- chaque touche porte un modificateur
+	// Scalar different (1.0 / 2.0 / 3.0) dans l'IMC, ce qui permet de savoir laquelle a ete pressee
+	// a partir de la seule valeur recue. Augmenter au-dela de 3 emplacements ne demande alors qu'une
+	// touche supplementaire dans l'IMC (Scalar 4.0), sans recompiler.
+	UPROPERTY(EditDefaultsOnly, Category = "Input")
+	TObjectPtr<UInputAction> CastSlotAction;
+
 	void Move(const FInputActionValue& Value);
 	void Look(const FInputActionValue& Value);
+	void CastSlot(const FInputActionValue& Value);
 
 	// < 0 tant qu'aucune secousse n'a encore ete jouee
 	double LastJitterUpdateTimeSeconds = -1.0;

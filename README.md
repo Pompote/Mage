@@ -273,7 +273,7 @@ Sort simple : Clic droit
 
 ## Reconnaissance de formes (dessin de sorts)
 
-**Statut : implémenté** (capture, algorithme, bibliothèque de formes) — **pas encore fait** : la couche de résolution (buffer de sorts ↔ forme reconnue, section 4)
+**Statut : implémenté** (capture, algorithme, bibliothèque de formes, buffer de sorts, cast)
 
 ```mermaid
 flowchart TD
@@ -283,7 +283,10 @@ flowchart TD
     E[Asset Manager] -->|decouverte auto au demarrage /Game/Spells/Shapes| F[UGestureShapeTemplate x N]
     F --> B
     G[Image source .png] -->|BakeFromImage, editor-only| F
-    B -->|ID forme + score| H[USpellBufferComponent - a construire]
+    B -->|OnGestureRecognized: ID forme + score| H[USpellBufferComponent]
+    H -->|lookup ShapeId - KnownSpells| I[USpellDefinition - Icon + Shape + EffectClass]
+    H -->|OnBufferChanged| J[AMageHUD - icones bas-gauche]
+    K[Touches 1/2/3, IA_CastSlot Axis1D + Scalar 1/2/3 par touche] -->|CastSlot Value -> SlotIndex| H
 ```
 
 **Principe directeur** : la reconnaissance ne doit jamais savoir ce qu'est un sort, et le gameplay ne doit jamais savoir comment une forme est reconnue. Tant que cette frontière tient, chaque côté évolue indépendamment (nouvel algo, nouvelles formes, règles de composition Phase 2) sans onde de choc sur le reste.
@@ -299,7 +302,7 @@ flowchart TD
 | Bibliothèque de formes | Data Assets découverts automatiquement (Asset Manager, `/Game/Spells/Shapes`) | `UGestureShapeTemplate` |
 | Bake | Image → pixels d'encre → sous-échantillonnage → tri en chemin → normalisation | `UGestureShapeTemplate::BakeFromImage()` |
 | Génération en lot | Crée et bake automatiquement une forme par image pas encore associée | `UGestureShapeBatchGenerator` |
-| Résolution | Buffer de sorts, lookup forme → sort — **pas encore construit** | `USpellBufferComponent` / `USpellDefinition` |
+| Résolution | Buffer de sorts (FIFO, 3 emplacements ajustables), lookup forme → sort, cast via touche dédiée | `USpellBufferComponent` / `USpellDefinition` |
 
 **Pourquoi ça scale** : ajouter une forme = déposer une image dans `Content/Spells/Shapes/SourceImages/`, cliquer le bouton de génération en lot — zéro ligne de code, zéro recompilation, découverte automatique par l'Asset Manager. Les ID de formes sont des `FName` simples (pas de GameplayTags — jugé inutilement complexe à ce stade pour une poignée de formes).
 
@@ -308,6 +311,8 @@ flowchart TD
 - $1 n'est invariant qu'à la rotation/échelle, **pas** au sens de tracé (horaire/anti-horaire) — un joueur peut dessiner un cercle dans les deux sens → sens de parcours forcé systématiquement (aire signée du polygone) dans `Normalize()`
 
 **Point ouvert non résolu** : en jeu, certaines formes se font encore confondre avec Square plus souvent qu'attendu. Hypothèse actuelle : le tracé souris capturé en direct est probablement sous-échantillonné (trop peu de points bruts pendant un tracé rapide), contrairement aux formes bakées qui partent d'images à haute résolution — pas encore vérifié avec de vraies données de capture.
+
+**Cast des emplacements du buffer (touches 1/2/3)** : une seule Input Action (`IA_CastSlot`, Axis1D/float) sert les 3 touches, plutôt que 3 Input Actions distinctes — chaque touche porte son propre modificateur *Scalar* (1.0 / 2.0 / 3.0) dans l'IMC, ce qui permet de retrouver l'emplacement visé à partir de la seule valeur reçue côté C++ (`AMageCharacter::CastSlot`). Avantage direct : augmenter `MaxBufferSize` au-delà de 3 ne demande qu'une touche de plus dans l'IMC (Scalar 4.0), aucune recompilation.
 
 **Lien réseau** : la reconnaissance reste 100% côté client (pas de réplication du tracé brut) ; seule la couche de résolution enverra plus tard une requête au serveur ("je veux lancer le sort X"), qui valide et exécute — cohérent avec le principe "client demande, serveur décide" retenu pour la coop.
 

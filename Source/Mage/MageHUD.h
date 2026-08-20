@@ -62,6 +62,18 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "Spells", meta = (EditCondition = "bDrawTraceInWorldSpace"))
 	float TraceWorldScale = 0.4f;
 
+	// Taille (pixels) de chaque icone du buffer de sorts, bas-gauche de l'ecran
+	UPROPERTY(EditAnywhere, Category = "Spells")
+	float BufferIconSize = 48.f;
+
+	// Espace (pixels) entre deux icones du buffer
+	UPROPERTY(EditAnywhere, Category = "Spells")
+	float BufferIconSpacing = 8.f;
+
+	// Marge (pixels) depuis le bord bas et le bord gauche de l'ecran
+	UPROPERTY(EditAnywhere, Category = "Spells")
+	float BufferMarginFromEdge = 24.f;
+
 private:
 	// Petite croix au centre de l'ecran, repere de vue en permanence (et point de depart du dessin)
 	void DrawCrosshair(const FVector2D& Center);
@@ -71,4 +83,8 @@ private:
 
 	// Convertit un point d'espace de dessin (2D) en position monde, sur le plan devant la camera
 	FVector ProjectToWorld(const FVector2D& DrawSpacePoint) const;
+
+	// Rangee d'icones du buffer de sorts en bas a gauche -- lu en direct depuis USpellBufferComponent
+	// chaque frame, donc toujours a jour des qu'un sort est prepare ou lance
+	void DrawSpellBuffer(const class APawn* Pawn);
 };
