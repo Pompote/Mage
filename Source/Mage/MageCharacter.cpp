@@ -50,6 +50,20 @@ AMageCharacter::AMageCharacter()
 	SpellBufferComponent = CreateDefaultSubobject<USpellBufferComponent>(TEXT("SpellBufferComponent"));
 }
 
+float AMageCharacter::GetDashCooldownRemainingFraction() const
+{
+	if (DashCooldownSeconds <= 0.f)
+	{
+		return 0.f;
+	}
+
+	const UWorld* World = GetWorld();
+	const double Now = World ? World->GetTimeSeconds() : 0.0;
+	const double Elapsed = Now - LastDashTimeSeconds;
+
+	return FMath::Clamp(static_cast<float>(1.0 - Elapsed / static_cast<double>(DashCooldownSeconds)), 0.f, 1.f);
+}
+
 // Called when the game starts or when spawned
 void AMageCharacter::BeginPlay()
 {
@@ -70,6 +84,14 @@ void AMageCharacter::BeginPlay()
 void AMageCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
+
+	// Independant du dessin : un dash doit fonctionner que le joueur soit en train de dessiner ou non
+	if (DashDistanceRemaining > 0.f)
+	{
+		const float StepDistance = FMath::Min(DashDistanceRemaining, DashSpeed * DeltaTime);
+		AddActorWorldOffset(DashDirection * StepDistance, true); // sweep=true : s'arrete contre les murs
+		DashDistanceRemaining -= StepDistance;
+	}
 
 	if (!SpellDrawComponent || !SpellDrawComponent->IsDrawingStroke() || !Controller)
 	{
@@ -137,6 +159,10 @@ void AMageCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompo
 		else
 		{
 			UE_LOG(LogTemp, Warning, TEXT("MageCharacter: CastSlotAction est NULL -- rien n'est assigne dans le Blueprint enfant, les touches 1/2/3 ne feront jamais rien"));
+		}
+		if (DashAction)
+		{
+			EnhancedInput->BindAction(DashAction, ETriggerEvent::Started, this, &AMageCharacter::Dash);
 		}
 	}
 }
@@ -207,4 +233,34 @@ void AMageCharacter::CastSlot(const FInputActionValue& Value)
 	}
 
 	SpellBufferComponent->CastSlot(SlotIndex);
+}
+
+void AMageCharacter::Dash()
+{
+	const UWorld* World = GetWorld();
+	const double Now = World ? World->GetTimeSeconds() : 0.0;
+
+	if (Now - LastDashTimeSeconds < static_cast<double>(DashCooldownSeconds))
+	{
+		return;
+	}
+
+	// Dasher interrompt un dessin en cours plutot que de le laisser continuer camera a moitie
+	// bloquee -- garde un vrai risque au dessin (voir README "Mobilite pendant le dessin") : pas
+	// moyen d'esquiver sans perdre la preparation en cours.
+	if (SpellDrawComponent && SpellDrawComponent->IsDrawingStroke())
+	{
+		SpellDrawComponent->CancelStroke();
+	}
+
+	FVector Direction = GetLastMovementInputVector();
+	Direction.Z = 0.f;
+	if (!Direction.Normalize())
+	{
+		Direction = GetActorForwardVector();
+	}
+
+	DashDirection = Direction;
+	DashDistanceRemaining = DashRange;
+	LastDashTimeSeconds = Now;
 }

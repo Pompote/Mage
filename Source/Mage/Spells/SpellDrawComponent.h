@@ -26,6 +26,11 @@ public:
 	// A appeler quand le joueur relache la touche de dessin ; declenche la reconnaissance
 	void EndStroke();
 
+	// A appeler pour interrompre un trace en cours sans tenter de le reconnaitre (ex : le joueur
+	// dashe pour esquiver plutot que de finir son dessin) -- contrairement a EndStroke, ne declenche
+	// jamais OnGestureRecognized.
+	void CancelStroke();
+
 	// A appeler par le personnage avec le delta souris brut tant qu'un trace est en cours -- remplace
 	// l'input normalement envoye a la camera pendant le dessin (voir README "Mobilite pendant le dessin")
 	void AddStrokeInput(const FVector2D& Delta);

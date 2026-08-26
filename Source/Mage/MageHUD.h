@@ -74,6 +74,26 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "Spells")
 	float BufferMarginFromEdge = 24.f;
 
+	// Taille (pixels) de la case de cooldown du dash, haut-gauche de l'ecran
+	UPROPERTY(EditAnywhere, Category = "Spells")
+	float DashIconSize = 48.f;
+
+	// Marge (pixels) depuis le bord haut et le bord gauche de l'ecran
+	UPROPERTY(EditAnywhere, Category = "Spells")
+	float DashMarginFromEdge = 24.f;
+
+	// Duree (secondes) du flash joue quand le dash est consomme ou redevient disponible
+	UPROPERTY(EditAnywhere, Category = "Spells")
+	float DashFlashDurationSeconds = 0.25f;
+
+	// Couleur du flash quand le dash vient d'etre consomme
+	UPROPERTY(EditAnywhere, Category = "Spells")
+	FLinearColor DashConsumedFlashColor = FLinearColor(1.f, 0.25f, 0.1f, 1.f);
+
+	// Couleur du flash quand le dash redevient disponible
+	UPROPERTY(EditAnywhere, Category = "Spells")
+	FLinearColor DashReadyFlashColor = FLinearColor(0.3f, 0.9f, 1.f, 1.f);
+
 private:
 	// Petite croix au centre de l'ecran, repere de vue en permanence (et point de depart du dessin)
 	void DrawCrosshair(const FVector2D& Center);
@@ -87,4 +107,15 @@ private:
 	// Rangee d'icones du buffer de sorts en bas a gauche -- lu en direct depuis USpellBufferComponent
 	// chaque frame, donc toujours a jour des qu'un sort est prepare ou lance
 	void DrawSpellBuffer(const class APawn* Pawn);
+
+	// Case de cooldown du dash en haut a gauche -- se remplit de bas en haut au fur et a mesure que
+	// le cooldown se termine, avec un flash ponctuel a la consommation et au retour de disponibilite
+	void DrawDashCooldown(const class APawn* Pawn);
+
+	// Etat du frame precedent, pour detecter la transition pret <-> en cooldown et declencher le flash
+	bool bWasDashReadyLastFrame = true;
+
+	// Tres negatif au depart : aucun flash n'a encore ete declenche
+	double DashFlashStartTimeSeconds = -1000.0;
+	FLinearColor CurrentDashFlashColor = FLinearColor::White;
 };

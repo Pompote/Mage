@@ -23,6 +23,10 @@ public:
 	// Sets default values for this character's properties
 	AMageCharacter();
 
+	// 0 = dash disponible, 1 = tout juste consomme -- decroit lineairement vers 0 au fil du
+	// cooldown. Pour l'affichage HUD (case qui se remplit de bas en haut).
+	float GetDashCooldownRemainingFraction() const;
+
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
@@ -69,6 +73,20 @@ private:
 	UPROPERTY(EditAnywhere, Category = "Camera")
 	float DrawMicroJitterFrequency = 15.f;
 
+	// Vitesse (unites/seconde) a laquelle le dash deplace le personnage -- controle le cote
+	// "instantane" du mouvement ; c'est DashRange, pas cette valeur, qui determine si un dash
+	// suffit a esquiver une attaque donnee (duree du dash = DashRange / DashSpeed)
+	UPROPERTY(EditAnywhere, Category = "Dash")
+	float DashSpeed = 3000.f;
+
+	// Distance totale (unites) parcourue par un dash, independamment de sa vitesse
+	UPROPERTY(EditAnywhere, Category = "Dash")
+	float DashRange = 600.f;
+
+	// Temps minimum (secondes) entre deux dash
+	UPROPERTY(EditAnywhere, Category = "Dash")
+	float DashCooldownSeconds = 1.5f;
+
 	// Placeholder visuel (capsule du moteur) en attendant un vrai mesh de personnage
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Mesh", meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UStaticMeshComponent> PlaceholderMesh;
@@ -106,10 +124,25 @@ private:
 	UPROPERTY(EditDefaultsOnly, Category = "Input")
 	TObjectPtr<UInputAction> CastSlotAction;
 
+	// Digital (bool) : esquive dans la direction du deplacement en cours (ou vers l'avant si aucun
+	// input de deplacement), sous cooldown
+	UPROPERTY(EditDefaultsOnly, Category = "Input")
+	TObjectPtr<UInputAction> DashAction;
+
 	void Move(const FInputActionValue& Value);
 	void Look(const FInputActionValue& Value);
 	void CastSlot(const FInputActionValue& Value);
+	void Dash();
 
 	// < 0 tant qu'aucune secousse n'a encore ete jouee
 	double LastJitterUpdateTimeSeconds = -1.0;
+
+	// Direction (normalisee) du dash en cours ; sans effet si DashDistanceRemaining <= 0
+	FVector DashDirection = FVector::ZeroVector;
+
+	// Distance qu'il reste a parcourir sur le dash en cours -- <= 0 signifie "pas de dash en cours"
+	float DashDistanceRemaining = 0.f;
+
+	// Tres negatif au depart : un dash est disponible des le debut de partie
+	double LastDashTimeSeconds = -1000.0;
 };

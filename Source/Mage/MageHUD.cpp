@@ -7,6 +7,7 @@
 #include "Engine/Texture2D.h"
 #include "GameFramework/Pawn.h"
 #include "GameFramework/PlayerController.h"
+#include "MageCharacter.h"
 #include "Spells/SpellBufferComponent.h"
 #include "Spells/SpellDefinition.h"
 #include "Spells/SpellDrawComponent.h"
@@ -23,6 +24,7 @@ void AMageHUD::DrawHUD()
 	const APawn* Pawn = PlayerOwner ? PlayerOwner->GetPawn() : nullptr;
 
 	DrawSpellBuffer(Pawn);
+	DrawDashCooldown(Pawn);
 
 	const USpellDrawComponent* DrawComponent = Pawn ? Pawn->FindComponentByClass<USpellDrawComponent>() : nullptr;
 
@@ -166,6 +168,62 @@ void AMageHUD::DrawSpellBuffer(const APawn* Pawn)
 		{
 			// Emplacement vide : simple fond sombre translucide pour marquer la place
 			DrawRect(FLinearColor(0.2f, 0.2f, 0.2f, 0.5f), SlotX, StartY, BufferIconSize, BufferIconSize);
+		}
+	}
+}
+
+void AMageHUD::DrawDashCooldown(const APawn* Pawn)
+{
+	const AMageCharacter* MageCharacter = Cast<AMageCharacter>(Pawn);
+	if (!MageCharacter || !Canvas)
+	{
+		return;
+	}
+
+	const float CooldownFraction = MageCharacter->GetDashCooldownRemainingFraction();
+	const bool bIsReady = CooldownFraction <= 0.f;
+
+	const UWorld* World = GetWorld();
+	const double Now = World ? World->GetTimeSeconds() : 0.0;
+
+	// Detecte la transition pret <-> en cooldown pour declencher un flash ponctuel (une seule fois
+	// par transition, pas a chaque frame ou le dash reste dans le meme etat)
+	if (bIsReady != bWasDashReadyLastFrame)
+	{
+		DashFlashStartTimeSeconds = Now;
+		CurrentDashFlashColor = bIsReady ? DashReadyFlashColor : DashConsumedFlashColor;
+	}
+	bWasDashReadyLastFrame = bIsReady;
+
+	const float X = DashMarginFromEdge;
+	const float Y = DashMarginFromEdge;
+
+	// Fond sombre : portion "pas encore disponible"
+	DrawRect(FLinearColor(0.1f, 0.1f, 0.1f, 0.6f), X, Y, DashIconSize, DashIconSize);
+
+	// Remplissage qui monte du bas vers le haut au fur et a mesure que le cooldown se termine
+	const float FillHeight = DashIconSize * (1.f - CooldownFraction);
+	if (FillHeight > 0.f)
+	{
+		DrawRect(FLinearColor(0.3f, 0.6f, 1.f, 0.9f), X, Y + (DashIconSize - FillHeight), DashIconSize, FillHeight);
+	}
+
+	// Contour de la case
+	DrawLine(X, Y, X + DashIconSize, Y, FLinearColor::White, 1.f);
+	DrawLine(X, Y, X, Y + DashIconSize, FLinearColor::White, 1.f);
+	DrawLine(X + DashIconSize, Y, X + DashIconSize, Y + DashIconSize, FLinearColor::White, 1.f);
+	DrawLine(X, Y + DashIconSize, X + DashIconSize, Y + DashIconSize, FLinearColor::White, 1.f);
+
+	// Flash ponctuel (consommation ou retour de disponibilite), s'estompe avec le temps
+	if (DashFlashStartTimeSeconds >= 0.0)
+	{
+		const float FlashElapsed = static_cast<float>(Now - DashFlashStartTimeSeconds);
+		if (FlashElapsed < DashFlashDurationSeconds)
+		{
+			const float FlashAlpha = 1.f - (FlashElapsed / DashFlashDurationSeconds);
+			FLinearColor FlashColor = CurrentDashFlashColor;
+			FlashColor.A = FlashAlpha;
+			DrawRect(FlashColor, X, Y, DashIconSize, DashIconSize);
 		}
 	}
 }

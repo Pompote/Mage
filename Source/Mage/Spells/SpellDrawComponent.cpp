@@ -88,6 +88,24 @@ void USpellDrawComponent::EndStroke()
 	// Pas de reset ici : voir BeginStroke -- laisse le HUD terminer son affichage retarde
 }
 
+void USpellDrawComponent::CancelStroke()
+{
+	if (!bIsDrawingStroke)
+	{
+		return;
+	}
+
+	bIsDrawingStroke = false;
+
+	if (const UWorld* World = GetWorld())
+	{
+		LastStrokeEndTimeSeconds = World->GetTimeSeconds();
+	}
+
+	// Pas de reset de CurrentStroke ici non plus, pour la meme raison que EndStroke -- le HUD peut
+	// encore avoir besoin de rattraper les derniers points affiches.
+}
+
 bool USpellDrawComponent::ShouldSuppressCameraInput() const
 {
 	if (bIsDrawingStroke)
