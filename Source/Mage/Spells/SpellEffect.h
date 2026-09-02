@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "Spells/SpellCastContext.h"
 #include "UObject/Object.h"
 #include "SpellEffect.generated.h"
 
@@ -16,6 +17,6 @@ class MAGE_API USpellEffect : public UObject
 
 public:
 	UFUNCTION(BlueprintNativeEvent, Category = "Spell")
-	void Execute(AActor* Caster);
-	virtual void Execute_Implementation(AActor* Caster);
+	void Execute(const FSpellCastContext& Context);
+	virtual void Execute_Implementation(const FSpellCastContext& Context);
 };

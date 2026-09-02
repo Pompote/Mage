@@ -12,6 +12,7 @@ class UInputMappingContext;
 class UInputAction;
 class USpellDrawComponent;
 class USpellBufferComponent;
+class UGrabThrowComponent;
 struct FInputActionValue;
 
 UCLASS()
@@ -99,6 +100,11 @@ private:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Spells", meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<USpellBufferComponent> SpellBufferComponent;
 
+	// Sort de manipulation (saisir/lancer), toujours disponible -- voir README "Mecanique #2 :
+	// Elements et interactions"
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Spells", meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<UGrabThrowComponent> GrabThrowComponent;
+
 	// Assets d'input Enhanced Input, a assigner dans l'editeur (Blueprint enfant conseille)
 	UPROPERTY(EditDefaultsOnly, Category = "Input")
 	TObjectPtr<UInputMappingContext> DefaultMappingContext;
@@ -129,10 +135,23 @@ private:
 	UPROPERTY(EditDefaultsOnly, Category = "Input")
 	TObjectPtr<UInputAction> DashAction;
 
+	// Digital (bool) : presse pour saisir un acteur saisissable vise, relache pour le lancer
+	UPROPERTY(EditDefaultsOnly, Category = "Input")
+	TObjectPtr<UInputAction> GrabThrowAction;
+
+	// @todo DEBUG A SUPPRIMER : outil de test temporaire pour le systeme elemental (voir README
+	// "Mecanique #2"), en attendant que de vrais sorts appliquent des elements. Applique un element
+	// aleatoire a ce que vise la camera.
+	UPROPERTY(EditDefaultsOnly, Category = "Debug")
+	TObjectPtr<UInputAction> DebugApplyElementAction;
+
 	void Move(const FInputActionValue& Value);
 	void Look(const FInputActionValue& Value);
 	void CastSlot(const FInputActionValue& Value);
 	void Dash();
+
+	// @todo DEBUG A SUPPRIMER
+	void DebugApplyRandomElement();
 
 	// < 0 tant qu'aucune secousse n'a encore ete jouee
 	double LastJitterUpdateTimeSeconds = -1.0;

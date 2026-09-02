@@ -164,9 +164,118 @@ Le joueur trace une forme à la souris (clic gauche maintenu) pour **préparer**
 - Que se passe-t-il si le joueur dessine un sort déjà présent dans le buffer (stack en double, ou refus/pas d'effet ?)
 - Nombre de formes de base dans le vocabulaire visuel (pas trop pour rester lisible sous stress, mais assez pour la combinatoire)
 
-## Mécanique #2 : [Nom]
+## Mécanique #2 : Éléments et interactions
+
+**Statut : conception, pas encore implémenté**
 
 Description :
+
+Quatre éléments de base (Feu, Eau, Terre, Air). Un sort élémentaire n'inflige pas seulement des
+dégâts : il **applique un statut élémentaire** à sa cible. Deux éléments différents qui se
+rencontrent physiquement sur une même cible déclenchent une **réaction** — un résultat différent
+des deux éléments d'origine. Objectif : que préparer ses sorts demande de vraiment réfléchir
+("cet ennemi est brûlable, je le brûle, je le lance dans une flaque pour déclencher autre chose"),
+pas juste viser juste.
+
+### Modèle retenu : réaction au contact
+
+Pas une combinaison au moment du dessin (voir Phase 2 de Mécanique #1, formes composées) — les deux
+idées pourront coexister plus tard, mais seule celle-ci est conçue ici. Le statut élémentaire est
+porté par l'acteur touché, pendant une durée limitée. Deux façons de le faire réagir :
+- Toucher une même cible avec deux sorts d'éléments différents avant que le premier n'expire
+- Utiliser le sort de manipulation (voir plus bas) pour physiquement amener un élément vers un
+  autre
+
+Puisque la réaction se joue à l'impact et pas à la préparation, elle reste compatible avec le
+principe déjà établi du buffer : viser/déclencher se décide au moment du cast, pas du dessin.
+
+### Table des combinaisons
+
+| A     | B     | Résultat                 | Rôle visé |
+|-------|-------|--------------------------|----|
+| Feu   | Eau   | **Brume**                | gêne la visée/visibilité |
+| Eau   | Terre | **Boue**                 | terrain qui ralentit |
+| Feu   | Terre | **Roche incandescente**  | zone de dégâts continus |
+| Feu   | Air   | **Foudre**               | dégâts ponctuels rapides, pourrait enchaîner entre cibles groupées |
+| Eau   | Air   | **Trombe d'eau**         | contrôle de foule, attire les ennemis proches |
+| Terre | Air   | **Tempête de poussière** | debuff de précision/visibilité en zone |
+
+Répartition volontaire entre dégâts/contrôle/terrain/debuff, pour que plusieurs styles de jeu
+restent viables (objectif d'équilibre) — à ajuster une fois testé en jeu.
+
+### Affinités élémentaires par type d'ennemi
+
+Chaque type d'ennemi réagit différemment à chaque élément — donnée par type, pas de branchement
+au cas par cas :
+- **Normal** : durée de statut standard (ex : le gobelin prend feu facilement, durée normale)
+- **Absorbent** : le statut dure nettement plus longtemps — un mauvais choix pour affaiblir cet
+  ennemi directement, mais un excellent "réservoir" à saisir puis lancer ailleurs (ex : le golem
+  d'argile imprègne l'eau et le feu)
+
+### Sort de manipulation (grab + lancer)
+
+Contrairement aux sorts dessinés, ce sort est **toujours disponible** (pas de dessin, pas de
+buffer) : une touche pour saisir un ennemi à distance, une autre (ou le relâchement) pour le lancer
+dans la direction visée. C'est l'outil qui transforme deux statuts posés séparément en une réaction
+provoquée à volonté, et le sens de tout le reste du système ("je brûle X, je le jette sur Y").
+
+### Ce qui reste volontairement simple dans cette première itération
+
+- Les 6 combinaisons pointent vers un seul effet placeholder générique (visuel provisoire) plutôt
+  que 6 mécaniques de gameplay distinctes — le but est de valider la boucle complète (appliquer,
+  faire se rencontrer, réagir, saisir/lancer) avant de peaufiner chaque résultat individuellement
+- Ennemi de test minimal : marche vers le joueur, pas de PV/combat, juste un profil élémentaire —
+  pour pouvoir jouer la boucle en PIE, pas pour préfigurer le vrai roster d'ennemis (voir section 5)
+- Pas de réplication réseau (rien dans le projet ne l'est encore à ce stade)
+
+### Terrain de jeux dans la scène de base
+
+Deux types d'acteurs de test coexistent dans le niveau, pas un seul :
+- Plusieurs **mannequins statiques** (acteur immobile + mesh + `UElementalStatusComponent`, aucun
+  code supplémentaire nécessaire une fois le composant construit) placés côte à côte, mesh teinté
+  selon l'élément porté (`OnElementChanged` -> matériau dynamique) — pour voir une réaction se
+  déclencher instantanément en lançant deux sorts différents à proximité, sans dépendre du
+  mouvement ou du grab/lancer
+- L'**ennemi de test qui marche**, pour tester spécifiquement la boucle grab -> porter -> lancer
+
+Comme les mannequins statiques ne demandent aucune classe C++ dédiée (juste le composant + un
+Blueprint), ils peuvent être construits et testés dès que `UElementalStatusComponent` existe —
+avant même l'ennemi qui marche. Ordre de construction ajusté en conséquence ci-dessous.
+
+### Architecture technique envisagée
+
+Trois nouveaux dossiers sous `Source/Mage/`, au même niveau que `Spells/` : `Elements/` (le
+framework : enum, statut, affinité, table de réaction), `Enemies/` (l'ennemi de test), `Grab/`
+(saisie/lancer). Séparés de `Spells/` car consommés par plusieurs systèmes à la fois (sorts,
+ennemis, manipulation) — les y mettre inverserait la dépendance réelle. Pas de `GameplayTags` (même
+choix que pour les ID de formes, voir plus bas) : un simple `UENUM EElement { None, Fire, Water,
+Earth, Air }` suffit pour 4 valeurs fixes.
+
+Pièces principales :
+- `UElementalStatusComponent` : élément actuellement porté par un acteur (durée limitée, timer
+  d'expiration) — point d'entrée unique pour "un élément touche cet acteur", que la source soit un
+  sort ou un jet. C'est cette même fonction (`ApplyElement`) qui détecte qu'un élément différent
+  est déjà présent et déclenche la réaction — un seul endroit, quel que soit le moyen de livraison.
+- `UElementalAffinityProfile` (Data Asset par type d'ennemi) : liste `{ Élément, Normal/Absorbent,
+  multiplicateur de durée }` — nouveau type d'ennemi = nouvel asset, jamais de code par type.
+- `UElementReactionTable` (Data Asset unique, 6 lignes) + `UElementReactionSubsystem`
+  (`GameInstanceSubsystem`, même précédent que `USpellRecognitionSubsystem`) : résolution non
+  ordonnée (Feu+Eau = Eau+Feu), chargée une fois par session.
+- `USpellDefinition` gagne un champ `Element` ; `USpellEffect::Execute` passe d'un simple
+  `AActor* Caster` à un petit contexte `FSpellCastContext { Caster, Element, SpellDefinition }` —
+  changement obligatoire (un `UFUNCTION BlueprintNativeEvent` ne peut pas être surchargé), autant
+  passer par un struct extensible plutôt qu'un paramètre isolé à recasser au prochain besoin.
+- `AMageEnemyCharacter` (ennemi de test) et le lancer réutilisent le motif déjà en place pour le
+  Dash (`AddActorWorldOffset` balayé chaque frame) plutôt que `UProjectileMovementComponent`, qui
+  entrerait en conflit avec le `UCharacterMovementComponent` d'un `ACharacter`.
+
+Ordre de construction prévu (chaque étape compile et se vérifie avant la suivante) : types de base
++ affinité + statut élémentaire (avec teinte du mesh) + mannequins statiques du terrain de jeux
+(premier jalon visuel, sans mouvement ni grab) → les sorts appliquent un élément (avec un test de
+non-régression sur le rocher de Square, seul sort qui marche déjà) → table de réaction (testable
+sur les mannequins statiques, toujours sans grab/lancer) → ennemi de test qui marche → grab/lancer
+(saisir → porter → lancer, jalon final : brûler l'ennemi, le lancer sur un mannequin chargé en eau,
+voir la réaction se déclencher).
 
 # 5. Joueur contre monde
 

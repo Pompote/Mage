@@ -7,8 +7,9 @@
 #include "GameFramework/Pawn.h"
 #include "Spells/SpellProjectile.h"
 
-void UProjectileSpellEffect::Execute_Implementation(AActor* Caster)
+void UProjectileSpellEffect::Execute_Implementation(const FSpellCastContext& Context)
 {
+	AActor* Caster = Context.Caster;
 	if (!Caster || !ProjectileClass)
 	{
 		return;
@@ -28,5 +29,8 @@ void UProjectileSpellEffect::Execute_Implementation(AActor* Caster)
 	SpawnParams.Instigator = Cast<APawn>(Caster);
 	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 
-	Caster->GetWorld()->SpawnActor<ASpellProjectile>(ProjectileClass, SpawnLocation, SpawnRotation, SpawnParams);
+	if (ASpellProjectile* Projectile = Caster->GetWorld()->SpawnActor<ASpellProjectile>(ProjectileClass, SpawnLocation, SpawnRotation, SpawnParams))
+	{
+		Projectile->SetElement(Context.Element);
+	}
 }

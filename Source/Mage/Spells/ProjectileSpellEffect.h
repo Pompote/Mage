@@ -26,5 +26,5 @@ public:
 	UPROPERTY(EditDefaultsOnly, Category = "Spell")
 	float SpawnForwardOffset = 100.f;
 
-	virtual void Execute_Implementation(AActor* Caster) override;
+	virtual void Execute_Implementation(const FSpellCastContext& Context) override;
 };

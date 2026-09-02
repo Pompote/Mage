@@ -5,6 +5,7 @@
 #include "GameFramework/Actor.h"
 #include "Spells/GestureRecognizer.h"
 #include "Spells/GestureShapeTemplate.h"
+#include "Spells/SpellCastContext.h"
 #include "Spells/SpellDefinition.h"
 #include "Spells/SpellDrawComponent.h"
 #include "Spells/SpellEffect.h"
@@ -85,7 +86,11 @@ void USpellBufferComponent::CastSlot(int32 SlotIndex)
 		{
 			if (USpellEffect* Effect = NewObject<USpellEffect>(this, Spell->EffectClass))
 			{
-				Effect->Execute(GetOwner());
+				FSpellCastContext Context;
+				Context.Caster = GetOwner();
+				Context.Element = Spell->Element;
+				Context.SpellDefinition = Spell;
+				Effect->Execute(Context);
 			}
 		}
 	}

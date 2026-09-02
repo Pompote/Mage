@@ -7,10 +7,14 @@
 #include "GameFramework/CharacterMovementComponent.h"
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
+#include "Grab/GrabThrowComponent.h"
 #include "InputActionValue.h"
 #include "Spells/SpellBufferComponent.h"
 #include "Spells/SpellDrawComponent.h"
 #include "UObject/ConstructorHelpers.h"
+
+// @todo DEBUG A SUPPRIMER
+#include "Elements/ElementalStatusComponent.h"
 
 // Sets default values
 AMageCharacter::AMageCharacter()
@@ -48,6 +52,7 @@ AMageCharacter::AMageCharacter()
 
 	SpellDrawComponent = CreateDefaultSubobject<USpellDrawComponent>(TEXT("SpellDrawComponent"));
 	SpellBufferComponent = CreateDefaultSubobject<USpellBufferComponent>(TEXT("SpellBufferComponent"));
+	GrabThrowComponent = CreateDefaultSubobject<UGrabThrowComponent>(TEXT("GrabThrowComponent"));
 }
 
 float AMageCharacter::GetDashCooldownRemainingFraction() const
@@ -164,6 +169,16 @@ void AMageCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompo
 		{
 			EnhancedInput->BindAction(DashAction, ETriggerEvent::Started, this, &AMageCharacter::Dash);
 		}
+		if (GrabThrowAction && GrabThrowComponent)
+		{
+			EnhancedInput->BindAction(GrabThrowAction, ETriggerEvent::Started, GrabThrowComponent.Get(), &UGrabThrowComponent::TryGrab);
+			EnhancedInput->BindAction(GrabThrowAction, ETriggerEvent::Completed, GrabThrowComponent.Get(), &UGrabThrowComponent::ReleaseOrThrow);
+		}
+		// @todo DEBUG A SUPPRIMER
+		if (DebugApplyElementAction)
+		{
+			EnhancedInput->BindAction(DebugApplyElementAction, ETriggerEvent::Started, this, &AMageCharacter::DebugApplyRandomElement);
+		}
 	}
 }
 
@@ -263,4 +278,46 @@ void AMageCharacter::Dash()
 	DashDirection = Direction;
 	DashDistanceRemaining = DashRange;
 	LastDashTimeSeconds = Now;
+}
+
+// @todo DEBUG A SUPPRIMER : outil de test temporaire, voir declaration dans le .h
+void AMageCharacter::DebugApplyRandomElement()
+{
+	const UCameraComponent* Camera = FindComponentByClass<UCameraComponent>();
+	if (!Camera)
+	{
+		return;
+	}
+
+	const FVector Start = Camera->GetComponentLocation();
+	const FVector End = Start + Camera->GetForwardVector() * 1000.f;
+
+	FCollisionQueryParams Params;
+	Params.AddIgnoredActor(this);
+
+	// ECC_Pawn plutot que ECC_Visibility : le preset de collision "Pawn" (capsule de tout ACharacter,
+	// donc AMageEnemyCharacter) ignore volontairement le canal Visibility -- ce trace ratait donc
+	// systematiquement les ennemis tout en touchant les mannequins statiques (BlockAll, qui bloque
+	// tout).
+	FHitResult Hit;
+	if (!GetWorld()->LineTraceSingleByChannel(Hit, Start, End, ECC_Pawn, Params))
+	{
+		UE_LOG(LogTemp, Warning, TEXT("DEBUG DebugApplyRandomElement -- rien touche par le trace"));
+		return;
+	}
+
+	UElementalStatusComponent* Status = Hit.GetActor() ? Hit.GetActor()->FindComponentByClass<UElementalStatusComponent>() : nullptr;
+	if (!Status)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("DEBUG DebugApplyRandomElement -- %s n'a pas de UElementalStatusComponent"),
+			Hit.GetActor() ? *Hit.GetActor()->GetName() : TEXT("NULL"));
+		return;
+	}
+
+	// 1..4 -> Fire/Water/Earth/Air, jamais None (0)
+	const EElement RandomElement = static_cast<EElement>(FMath::RandRange(1, 4));
+	Status->ApplyElement(RandomElement, this, Hit.Location);
+
+	UE_LOG(LogTemp, Log, TEXT("DEBUG DebugApplyRandomElement -- %s applique a %s"),
+		*UEnum::GetValueAsString(RandomElement), *Hit.GetActor()->GetName());
 }

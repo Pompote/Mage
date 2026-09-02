@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "Elements/ElementTypes.h"
 #include "GameFramework/Actor.h"
 #include "SpellProjectile.generated.h"
 
@@ -20,6 +21,15 @@ class MAGE_API ASpellProjectile : public AActor
 
 public:
 	ASpellProjectile();
+
+	// Element porte par ce projectile, livre a la cible au moment de l'impact (voir OnHit) --
+	// assigne par UProjectileSpellEffect au spawn. None = pas de statut a livrer (comportement
+	// inchange pour un sort sans element).
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Spells")
+	EElement Element = EElement::None;
+
+	UFUNCTION(BlueprintCallable, Category = "Spells")
+	void SetElement(EElement InElement) { Element = InElement; }
 
 protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Spells", meta = (AllowPrivateAccess = "true"))

@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "Elements/ElementTypes.h"
 #include "Engine/DataAsset.h"
 #include "SpellDefinition.generated.h"
 
@@ -30,4 +31,9 @@ public:
 
 	UPROPERTY(EditDefaultsOnly, Category = "Spell")
 	TSubclassOf<USpellEffect> EffectClass;
+
+	// Element porte par ce sort -- None = aucun (comportement inchange, voir README "Mecanique #2 :
+	// Elements et interactions")
+	UPROPERTY(EditDefaultsOnly, Category = "Spell")
+	EElement Element = EElement::None;
 };
