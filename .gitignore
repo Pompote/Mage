@@ -1,6 +1,9 @@
 # Visual Studio 2015 user specific files
 .vs/
 
+# Documentation consolidee generee (Doc/build-doc.ps1) -- artefact regenerable, pas commite
+Doc/Mage-Doc.html
+
 # Compiled Object files
 *.slo
 *.lo
