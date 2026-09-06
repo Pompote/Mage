@@ -326,11 +326,44 @@ En fin de game, types de récompenses :
   - première map
   - 2 ennemis finis
 
+## Version #2
+
+à implementer :
+- un premier niveau finis
+- possibilité de perdre ou de gagner
+- ajout des HP 
+
+Assets :
+- effets des éléments : feu, terre, eau voir Table des combinaisons.
+- terrain de base (herbe, château, motte de terre, botte de foin ect..)
+- animations énnemis en fonction des affinités (brule, mouillé, terré)
+- animation marche + mort
+
 # 10. Idées/Débats
 Altérations des ennemis : Faire le shaking de cam de suivi de dessin quand le joueur est altéré 
 Doigt qui brille qui envoie un trait style faisceau jusqu'à devant l'écran 
 Sorts compliqués (multi traits) : CTRL + Clic Droit
 Sort simple : Clic droit
+
+# 11. Ennemis
+
+Cette section détaille les ennemis.
+Pour l'instant les ennemis prennent le status de tous les éléments.
+faiblesse en fonction du type d'enemi.
+ennemi peut porter arme. 
+
+## Gobelin cac
+
+- épée/bouclier
+- Faiblesse feu *2 dégat *2 duration.
+- Resistance terre /2 degats /2 duration.
+
+## Gobelin mage
+
+- baton de magie
+- Faiblesse feu *2 dégat *2 duration.
+- Resistance terre /2 degats /2 duration.
+
 ---
 
 # Architecture
