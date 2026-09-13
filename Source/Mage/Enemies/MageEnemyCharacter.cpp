@@ -130,11 +130,12 @@ void AMageEnemyCharacter::TickSeeking(float DeltaTime)
 
 void AMageEnemyCharacter::TickThrown(float DeltaTime)
 {
-	const FVector Direction = ThrownVelocity.GetSafeNormal();
-	const float StepDistance = ThrownFlightSpeed * DeltaTime;
+	// Vol gere a la main (voir commentaire de classe) -- on ne peut pas compter sur MOVE_Falling
+	// pour la gravite ici, donc on l'integre nous-memes dans ThrownVelocity chaque frame.
+	ThrownVelocity.Z += GetCharacterMovement()->GetGravityZ() * DeltaTime;
 
 	FHitResult Hit;
-	AddActorWorldOffset(Direction * StepDistance, true, &Hit);
+	AddActorWorldOffset(ThrownVelocity * DeltaTime, true, &Hit);
 
 	if (Hit.bBlockingHit && Hit.GetActor())
 	{
@@ -164,5 +165,5 @@ void AMageEnemyCharacter::OnGrabbed_Implementation(AActor* Grabber)
 void AMageEnemyCharacter::OnThrown_Implementation(AActor* Thrower, const FVector& ThrowVelocity)
 {
 	MotionState = EEnemyMotionState::Thrown;
-	ThrownVelocity = ThrowVelocity;
+	ThrownVelocity = ThrowVelocity.GetSafeNormal() * ThrownFlightSpeed;
 }

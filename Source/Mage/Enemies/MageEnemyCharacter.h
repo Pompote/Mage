@@ -76,6 +76,10 @@ protected:
 
 private:
 	EEnemyMotionState MotionState = EEnemyMotionState::Seeking;
+
+	// Vitesse courante en vol -- pas juste la direction initiale du lancer : TickThrown lui ajoute
+	// la gravite chaque frame pour produire un arc, puisque ce vol n'est pas gere par
+	// UCharacterMovementComponent (voir commentaire de TickThrown).
 	FVector ThrownVelocity = FVector::ZeroVector;
 
 	void TickSeeking(float DeltaTime);
