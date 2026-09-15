@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>Mage — Maquette Menus</title>
+<!-- Source editable : ouvrir directement ce fichier dans un navigateur (file://) pour iterer,
+     les liens relatifs vers css/ et js/ fonctionnent sans serveur. Pour un fichier unique
+     partageable, lancer build-menu.ps1 -- voir Doc/Menus/MainMenu.compiled.html (regenere,
+     non commite, voir .gitignore). -->
+<link rel="stylesheet" href="css/tokens.css">
+<link rel="stylesheet" href="css/layout.css">
+<link rel="stylesheet" href="css/room.css">
+<link rel="stylesheet" href="css/spells.css">
+<link rel="stylesheet" href="css/kit.css">
+<!-- <model-viewer> (Google, licence Apache-2.0) : build "umd" = script classique (pas
+     type="module"), pour eviter toute incertitude CORS sur les modules ES en file://. Seule
+     dependance reseau de la maquette -- le modele 3D est embarque en data: URI (voir le
+     commentaire pres du <model-viewer> plus bas). "defer" est indispensable ici : un
+     <script src> classique en <head> bloque le rendu de toute la page tant qu'il n'a pas fini
+     de charger (ce qui donnait une page blanche si le CDN etait lent/injoignable) -- avec
+     defer, le HTML/CSS s'affiche normalement pendant le chargement, et le <model-viewer>
+     s'upgrade des que le script est pret, meme apres coup. -->
+<script defer src="https://unpkg.com/@google/model-viewer@4.3.1/dist/model-viewer-umd.js"></script>
+</head>
+<body>
+
+<div class="mockup-note">
+  <b>Maquette statique</b> — support de discussion pour l'enchaînement des menus, basé sur
+  <code>draft_maquet.drawio</code>. Architecture : variables communes + composants
+  <code>.panel</code>/<code>.btn</code> dans <code>css/tokens.css</code> (voir commentaire),
+  tout bouton <code>.return-btn</code> revient au menu automatiquement, sans câblage JS par écran.
+  Éléments/réactions du grimoire sont des placeholders (voir commentaire dans
+  <code>js/spell-data.js</code>) — connexion à l'éditeur Unreal indisponible cette session pour
+  lire les vraies valeurs.
+</div>
+
+<div class="scene">
+  <canvas id="runes"></canvas>
+
+  <!-- ============ MAIN MENU ============ -->
+  <div class="screen active" id="screen-main">
+    <div class="title-block">
+      <h1>MAGE</h1>
+      <p>dessine ton sort</p>
+    </div>
+
+    <nav class="menu">
+      <button class="menu-btn" data-accent="feu" id="btn-solo">
+        <span class="glyph"><svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke-width="1.4"/><path d="M9 8l7 4-7 4V8z" stroke-width="1.2" fill="none"/></svg></span>
+        <span class="label">Solo<small>SOLO</small></span>
+      </button>
+
+      <div class="menu-btn-wrap">
+        <button class="menu-btn" data-accent="eau" id="btn-multiplayer">
+          <span class="glyph"><svg viewBox="0 0 24 24" fill="none"><circle cx="8" cy="9" r="3.2" stroke-width="1.3"/><circle cx="16" cy="9" r="3.2" stroke-width="1.3"/><path d="M2.5 19c0-3 2.5-5 5.5-5s5.5 2 5.5 5M10.5 19c0-3 2.5-5 5.5-5s5.5 2 5.5 5" stroke-width="1.2"/></svg></span>
+          <span class="label">Multijoueur<small>MULTIPLAYER</small></span>
+        </button>
+        <div class="flyout" id="multiplayer-flyout">
+          <button id="btn-join">Rejoindre<small>JOIN</small></button>
+          <button id="btn-create">Créer<small>CREATE</small></button>
+        </div>
+      </div>
+
+      <button class="menu-btn" data-accent="air" id="btn-spells">
+        <span class="glyph"><svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke-width="1.4"/><rect x="8.5" y="8.5" width="7" height="7" stroke-width="1.1"/></svg></span>
+        <span class="label">Sorts<small>SPELLS</small></span>
+      </button>
+
+      <button class="menu-btn" data-accent="air" id="btn-settings">
+        <span class="glyph"><svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="3" stroke-width="1.4"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4M5 5l3 3M16 16l3 3M19 5l-3 3M8 16l-3 3" stroke-width="1.2"/></svg></span>
+        <span class="label">Paramètres<small>SETTINGS</small></span>
+      </button>
+
+      <button class="menu-btn" data-accent="feu" id="btn-quit">
+        <span class="glyph"><svg viewBox="0 0 24 24" fill="none"><rect x="5" y="5" width="14" height="14" stroke-width="1.4"/><path d="M9 9l6 6M15 9l-6 6" stroke-width="1.2"/></svg></span>
+        <span class="label">Quitter<small>LEAVE</small></span>
+      </button>
+    </nav>
+
+    <div class="version-tag">v0.2 — pré-alpha</div>
+  </div>
+
+  <!-- ============ SALON (JOIN -> server browser + room / CREATE -> room seule) ============ -->
+  <div class="screen" id="screen-room">
+    <button class="btn return-btn">← Return</button>
+    <div class="room-layout">
+      <div class="panel browser-panel" id="browser-panel">
+        <h3>Rejoindre</h3>
+        <div class="search-row">
+          <input type="text" id="server-search" placeholder="SEARCH BAR SERVER">
+          <button class="btn btn-solid" id="btn-server-ok">OK</button>
+        </div>
+        <div class="server-list" id="server-list"></div>
+      </div>
+
+      <div class="panel room-panel">
+        <div class="room-panel-header">
+          <div>
+            <h3 id="room-title">Salon</h3>
+            <p class="room-sub" id="room-sub">4 joueurs max</p>
+          </div>
+          <div class="room-code">
+            <span>ID Salon</span>
+            <div class="code-row">
+              <strong id="room-code-value">----</strong>
+              <button class="btn" id="btn-copy-code">Copier</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="invite-row">
+          <input type="text" id="invite-input" placeholder="SEARCH BAR INVITE">
+          <button class="btn btn-solid" id="btn-invite">Inviter</button>
+        </div>
+
+        <div class="slots" id="slots"></div>
+
+        <div class="lobby-footer">
+          <button class="btn ready-toggle" id="btn-ready">Pas prêt<small style="display:block;font-size:8px;letter-spacing:1px;opacity:.7;">PRET</small></button>
+          <button class="btn btn-accent start-game" id="btn-start" disabled>Lancer la partie<small>(uniquement pour hôte)</small></button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ SPELLS (grimoire / codex) ============ -->
+  <div class="screen" id="screen-spells">
+    <button class="btn return-btn">← Return</button>
+    <div class="spells-layout">
+      <div class="spell-left-col">
+        <div class="panel spell-list-panel">
+          <h3>Liste de sorts</h3>
+          <div id="spell-list"></div>
+        </div>
+        <div class="panel spell-desc-panel" id="spell-desc-panel">
+          <h4 id="spell-desc-title">—</h4>
+          <div id="spell-desc-body">Sélectionne un sort dans la liste.</div>
+        </div>
+      </div>
+      <div class="panel spell-preview-panel">
+        <!-- Modele embarque en data: URI (voir assets/generate-placeholder.py + assets/placeholder-gem.gltf,
+             source de reference) plutot que reference par chemin relatif : <model-viewer> charge son
+             modele via fetch() en JS, et Chrome bloque fetch() vers un fichier local (file://) meme
+             depuis une page elle-meme en file:// -- contrairement a <link>/<script src> qui n'ont pas
+             cette restriction. Embarquer les octets directement contourne le probleme. A remplacer par
+             un chemin relatif normal (src="assets/X.glb") le jour ou la maquette est servie via un vrai
+             serveur local plutot qu'ouverte en double-clic. -->
+        <model-viewer src="data:model/gltf+json;base64,eyJhc3NldCI6IHsidmVyc2lvbiI6ICIyLjAiLCAiZ2VuZXJhdG9yIjogIk1hZ2UgbW9ja3VwIHBsYWNlaG9sZGVyIGdlbmVyYXRvciJ9LCAic2NlbmUiOiAwLCAic2NlbmVzIjogW3sibm9kZXMiOiBbMF19XSwgIm5vZGVzIjogW3sibWVzaCI6IDB9XSwgIm1lc2hlcyI6IFt7InByaW1pdGl2ZXMiOiBbeyJhdHRyaWJ1dGVzIjogeyJQT1NJVElPTiI6IDAsICJOT1JNQUwiOiAxfSwgImluZGljZXMiOiAyLCAibWF0ZXJpYWwiOiAwfV19XSwgIm1hdGVyaWFscyI6IFt7Im5hbWUiOiAiUGxhY2Vob2xkZXJHcmV5IiwgInBick1ldGFsbGljUm91Z2huZXNzIjogeyJiYXNlQ29sb3JGYWN0b3IiOiBbMC41NSwgMC41NSwgMC42LCAxLjBdLCAibWV0YWxsaWNGYWN0b3IiOiAwLjEsICJyb3VnaG5lc3NGYWN0b3IiOiAwLjd9fV0sICJhY2Nlc3NvcnMiOiBbeyJidWZmZXJWaWV3IjogMCwgImNvbXBvbmVudFR5cGUiOiA1MTI2LCAiY291bnQiOiA2MCwgInR5cGUiOiAiVkVDMyIsICJtaW4iOiBbLTAuODUwNjUwODA4MzUyMDQsIC0wLjg1MDY1MDgwODM1MjA0LCAtMC44NTA2NTA4MDgzNTIwNF0sICJtYXgiOiBbMC44NTA2NTA4MDgzNTIwNCwgMC44NTA2NTA4MDgzNTIwNCwgMC44NTA2NTA4MDgzNTIwNF19LCB7ImJ1ZmZlclZpZXciOiAxLCAiY29tcG9uZW50VHlwZSI6IDUxMjYsICJjb3VudCI6IDYwLCAidHlwZSI6ICJWRUMzIn0sIHsiYnVmZmVyVmlldyI6IDIsICJjb21wb25lbnRUeXBlIjogNTEyMywgImNvdW50IjogNjAsICJ0eXBlIjogIlNDQUxBUiJ9XSwgImJ1ZmZlclZpZXdzIjogW3siYnVmZmVyIjogMCwgImJ5dGVPZmZzZXQiOiAwLCAiYnl0ZUxlbmd0aCI6IDcyMCwgInRhcmdldCI6IDM0OTYyfSwgeyJidWZmZXIiOiAwLCAiYnl0ZU9mZnNldCI6IDcyMCwgImJ5dGVMZW5ndGgiOiA3MjAsICJ0YXJnZXQiOiAzNDk2Mn0sIHsiYnVmZmVyIjogMCwgImJ5dGVPZmZzZXQiOiAxNDQwLCAiYnl0ZUxlbmd0aCI6IDEyMCwgInRhcmdldCI6IDM0OTYzfV0sICJidWZmZXJzIjogW3siYnl0ZUxlbmd0aCI6IDE1NjAsICJ1cmkiOiAiZGF0YTphcHBsaWNhdGlvbi9vY3RldC1zdHJlYW07YmFzZTY0LFVKWUd2MERFV1Q4QUFBQUFRTVJadndBQUFBQlFsZ1kvQUFBQUFGQ1dCajlBeEZrL1VKWUd2MERFV1Q4QUFBQUFBQUFBQUZDV0JqOUF4RmsvVUpZR1AwREVXVDhBQUFBQVVKWUd2MERFV1Q4QUFBQUFVSllHUDBERVdUOEFBQUFBQUFBQUFGQ1dCajlBeEZtL1VKWUd2MERFV1Q4QUFBQUFBQUFBQUZDV0JqOUF4Rm0vUU1SWnZ3QUFBQUJRbGdhL1VKWUd2MERFV1Q4QUFBQUFRTVJadndBQUFBQlFsZ2EvUU1SWnZ3QUFBQUJRbGdZL1VKWUdQMERFV1Q4QUFBQUFBQUFBQUZDV0JqOUF4RmsvUU1SWlB3QUFBQUJRbGdZL0FBQUFBRkNXQmo5QXhGay9RTVJadndBQUFBQlFsZ1kvQUFBQUFGQ1dCcjlBeEZrL1FNUlp2d0FBQUFCUWxnWS9RTVJadndBQUFBQlFsZ2EvVUpZR3YwREVXYjhBQUFBQVFNUlp2d0FBQUFCUWxnYS9BQUFBQUZDV0JqOUF4Rm0vQUFBQUFGQ1dCcjlBeEZtL0FBQUFBRkNXQmo5QXhGbS9VSllHUDBERVdUOEFBQUFBUU1SWlB3QUFBQUJRbGdhL1VKWUdQMERFV2I4QUFBQUFRTVJaUHdBQUFBQlFsZ1kvQUFBQUFGQ1dCcjlBeEZrL1VKWUdQMERFV2I4QUFBQUFBQUFBQUZDV0JyOUF4RmsvVUpZR3YwREVXYjhBQUFBQVVKWUdQMERFV2I4QUFBQUFVSllHdjBERVdiOEFBQUFBQUFBQUFGQ1dCcjlBeEZtL1VKWUdQMERFV2I4QUFBQUFBQUFBQUZDV0JyOUF4Rm0vUU1SWlB3QUFBQUJRbGdhL1VKWUdQMERFV2I4QUFBQUFRTVJaUHdBQUFBQlFsZ2EvUU1SWlB3QUFBQUJRbGdZL0FBQUFBRkNXQnI5QXhGay9RTVJaUHdBQUFBQlFsZ1kvQUFBQUFGQ1dCajlBeEZrL1VKWUd2MERFV2I4QUFBQUFBQUFBQUZDV0JyOUF4RmsvUU1SWnZ3QUFBQUJRbGdZL0FBQUFBRkNXQnI5QXhGbS9VSllHdjBERVdiOEFBQUFBUU1SWnZ3QUFBQUJRbGdhL1FNUlpQd0FBQUFCUWxnYS9BQUFBQUZDV0JyOUF4Rm0vQUFBQUFGQ1dCajlBeEZtL1FNUlpQd0FBQUFCUWxnWS9RTVJaUHdBQUFBQlFsZ2EvVUpZR1AwREVXVDhBQUFBQU9zMFR2enJORXo4NnpSTS9PczBUdnpyTkV6ODZ6Uk0vT3MwVHZ6ck5Fejg2elJNL0FBQUFnT3NsYno5anNiWStBQUFBZ09zbGJ6OWpzYlkrQUFBQWdPc2xiejlqc2JZK0FBQUFBT3NsYno5anNiYStBQUFBQU9zbGJ6OWpzYmErQUFBQUFPc2xiejlqc2JhK09zMFR2enJORXo4NnpSTy9PczBUdnpyTkV6ODZ6Uk8vT3MwVHZ6ck5Fejg2elJPLzZ5VnZ2Mk94dGo0QUFBQUE2eVZ2djJPeHRqNEFBQUFBNnlWdnYyT3h0ajRBQUFBQU9zMFRQenJORXo4NnpSTS9PczBUUHpyTkV6ODZ6Uk0vT3MwVFB6ck5Fejg2elJNL1k3RzJ2Z0FBQUFEckpXOC9ZN0cydmdBQUFBRHJKVzgvWTdHMnZnQUFBQURySlc4LzZ5VnZ2Mk94dHI0QUFBQ0E2eVZ2djJPeHRyNEFBQUNBNnlWdnYyT3h0cjRBQUFDQVk3RzJ2Z0FBQUFEckpXKy9ZN0cydmdBQUFBRHJKVysvWTdHMnZnQUFBQURySlcrL09zMFRQenJORXo4NnpSTy9PczBUUHpyTkV6ODZ6Uk8vT3MwVFB6ck5Fejg2elJPL09zMFRQenJORTc4NnpSTS9PczBUUHpyTkU3ODZ6Uk0vT3MwVFB6ck5FNzg2elJNL0FBQUFBT3NsYjc5anNiWStBQUFBQU9zbGI3OWpzYlkrQUFBQUFPc2xiNzlqc2JZK0FBQUFnT3NsYjc5anNiYStBQUFBZ09zbGI3OWpzYmErQUFBQWdPc2xiNzlqc2JhK09zMFRQenJORTc4NnpSTy9PczBUUHpyTkU3ODZ6Uk8vT3MwVFB6ck5FNzg2elJPLzZ5VnZQMk94dHI0QUFBQUE2eVZ2UDJPeHRyNEFBQUFBNnlWdlAyT3h0cjRBQUFBQVk3RzJQZ0FBQUlEckpXOC9ZN0cyUGdBQUFJRHJKVzgvWTdHMlBnQUFBSURySlc4L09zMFR2enJORTc4NnpSTS9PczBUdnpyTkU3ODZ6Uk0vT3MwVHZ6ck5FNzg2elJNL09zMFR2enJORTc4NnpSTy9PczBUdnpyTkU3ODZ6Uk8vT3MwVHZ6ck5FNzg2elJPL1k3RzJQZ0FBQUFEckpXKy9ZN0cyUGdBQUFBRHJKVysvWTdHMlBnQUFBQURySlcrLzZ5VnZQMk94dGo0QUFBQUE2eVZ2UDJPeHRqNEFBQUFBNnlWdlAyT3h0ajRBQUFBQUFBQUJBQUlBQXdBRUFBVUFCZ0FIQUFnQUNRQUtBQXNBREFBTkFBNEFEd0FRQUJFQUVnQVRBQlFBRlFBV0FCY0FHQUFaQUJvQUd3QWNBQjBBSGdBZkFDQUFJUUFpQUNNQUpBQWxBQ1lBSndBb0FDa0FLZ0FyQUN3QUxRQXVBQzhBTUFBeEFESUFNd0EwQURVQU5nQTNBRGdBT1FBNkFEc0EifV19" camera-controls auto-rotate auto-rotate-delay="0" rotation-per-second="30deg"></model-viewer>
+        <div class="preview-caption">Placeholder 3D générique — pas encore de modèle par sort</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ SPELL KIT SELECTOR (depuis SOLO) ============ -->
+  <div class="screen" id="screen-kit">
+    <button class="btn return-btn">← Return</button>
+    <div class="kit-screen">
+      <div class="kit-title">Spell Kit Selector</div>
+
+      <div class="kit-carousel">
+        <button class="btn kit-arrow" id="kit-prev">‹</button>
+        <div class="kit-cards" id="kit-cards"></div>
+        <button class="btn kit-arrow" id="kit-next">›</button>
+      </div>
+
+      <div class="kit-slots-block">
+        <div class="kit-slots-label">Liste de sorts sélectionnés</div>
+        <div class="kit-slots" id="kit-slots"></div>
+      </div>
+
+      <button class="btn btn-accent kit-validate" id="btn-validate" disabled>Validate</button>
+    </div>
+  </div>
+
+  <!-- ============ Overlay Paramètres ============ -->
+  <div class="overlay" id="overlay-options">
+    <div class="panel options-panel">
+      <h2>Paramètres</h2>
+
+      <div class="option-row">
+        <span>Volume général</span>
+        <input type="range" min="0" max="100" value="70" id="range-master">
+        <span class="val" id="val-master">70%</span>
+      </div>
+      <div class="option-row">
+        <span>Volume musique</span>
+        <input type="range" min="0" max="100" value="55" id="range-music">
+        <span class="val" id="val-music">55%</span>
+      </div>
+      <div class="option-row">
+        <span>Résolution</span>
+        <select>
+          <option>1920 x 1080</option>
+          <option>2560 x 1440</option>
+          <option>1280 x 720</option>
+        </select>
+      </div>
+      <div class="option-row">
+        <span>Sensibilité souris</span>
+        <input type="range" min="1" max="100" value="40" id="range-sens">
+        <span class="val" id="val-sens">40%</span>
+      </div>
+
+      <button class="btn options-close" id="btn-close-options">Retour</button>
+    </div>
+  </div>
+
+  <!-- ============ Overlay Confirmation Quitter (LEAVE) ============ -->
+  <div class="overlay" id="overlay-quit">
+    <div class="panel confirm-panel">
+      <p>Quitter Mage ?</p>
+      <div class="confirm-actions">
+        <button class="btn btn-danger" id="btn-confirm-quit">Quitter</button>
+        <button class="btn" id="btn-cancel-quit">Annuler</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="fade-out" id="fade-out"><span>Chargement...</span></div>
+</div>
+
+<!-- Ordre : utilitaires/donnees partagees d'abord, puis chrome de navigation, puis un fichier
+     par ecran. Tous en <script> classique (pas type="module") -- les modules ES sont bloques
+     par CORS en file://, alors que <script src> classique fonctionne sans serveur. -->
+<script src="js/background.js"></script>
+<script src="js/spell-data.js"></script>
+<script src="js/navigation.js"></script>
+<script src="js/room.js"></script>
+<script src="js/spells.js"></script>
+<script src="js/kit.js"></script>
+
+</body>
+</html>

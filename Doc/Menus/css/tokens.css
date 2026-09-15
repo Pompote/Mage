@@ -1,0 +1,113 @@
+/* ============================================================================
+   CHARTE GRAPHIQUE / ARCHITECTURE DE LA MAQUETTE
+   - Toutes les couleurs/espacements/rayons partages vivent dans :root ci-dessous.
+     Un nouvel ecran doit reutiliser ces variables plutot que des valeurs en dur.
+   - .panel = base visuelle commune a tous les encarts flottants (fond/bordure/rayon).
+     Un nouveau panneau : class="panel ma-classe-specifique" + ses seules regles de
+     taille/layout dans .ma-classe-specifique (voir css/room.css, css/spells.css...).
+   - .btn = base commune aux boutons utilitaires (Return, Copier, OK, fleches...).
+     Variantes : .btn-solid (fond visible), .btn-accent (bordure doree), .btn-danger
+     (bordure feu). Les 5 boutons du menu principal (.menu-btn, dans layout.css)
+     restent un composant a part, trop different (grand nav item + barre d'accent)
+     pour entrer dans .btn.
+   - Un bouton class="btn return-btn" est auto-cable vers le menu principal en JS
+     (voir js/navigation.js) : aucun cablage a ajouter par ecran.
+   ============================================================================ */
+:root {
+  /* Couleurs */
+  --bg-deep: #0a0710;
+  --bg-mid: #150f24;
+  --panel: rgba(20, 14, 34, 0.72);
+  --border: rgba(180, 150, 255, 0.28);
+  --text: #ece6ff;
+  --text-dim: #9c92c2;
+  --gold: #e8c987;
+
+  --feu: #ff6a3d;
+  --eau: #3daaff;
+  --terre: #7fae5c;
+  --air: #bfe9ff;
+
+  /* Echelle d'espacement -- a reutiliser pour tout nouveau padding/gap/margin */
+  --sp-1: 4px;
+  --sp-2: 8px;
+  --sp-3: 12px;
+  --sp-4: 16px;
+  --sp-5: 24px;
+  --sp-6: 32px;
+
+  /* Echelle typographique */
+  --fs-xs: 10px;
+  --fs-sm: 12px;
+  --fs-md: 14px;
+  --fs-lg: 18px;
+  --fs-xl: 22px;
+
+  /* Rayons partages */
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 10px;
+
+  /* Carte du carrousel et slot de loadout du Kit Selector : memes dimensions (demande) */
+  --kit-card-w: 168px;
+  --kit-card-h: 272px;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  height: 100%;
+  background: var(--bg-deep);
+  font-family: "Trebuchet MS", "Segoe UI", sans-serif;
+  color: var(--text);
+  overflow: hidden;
+}
+
+/* ---------- Note de maquette ---------- */
+.mockup-note {
+  position: fixed;
+  top: 10px;
+  left: 10px;
+  z-index: 50;
+  max-width: 360px;
+  padding: 10px 14px;
+  background: rgba(0, 0, 0, 0.55);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  font-size: var(--fs-sm);
+  line-height: 1.5;
+  color: var(--text-dim);
+}
+.mockup-note b { color: var(--text); }
+
+/* ---------- Composant partage : panneau flottant ---------- */
+.panel {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+}
+
+/* ---------- Composant partage : bouton utilitaire ---------- */
+.btn {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-dim);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  font-size: var(--fs-sm);
+  cursor: pointer;
+  transition: color 0.15s ease, border-color 0.15s ease, background 0.15s ease;
+}
+.btn:hover:not(:disabled) { color: var(--text); border-color: var(--text-dim); }
+.btn:disabled { opacity: 0.3; cursor: not-allowed; }
+
+.btn-solid { background: rgba(140, 100, 255, 0.18); color: var(--text); }
+.btn-solid:hover:not(:disabled) { background: rgba(140, 100, 255, 0.3); color: var(--text); border-color: var(--border); }
+
+.btn-accent { border-color: var(--gold); color: var(--gold); }
+.btn-accent:hover:not(:disabled) { background: rgba(232, 201, 135, 0.14); color: var(--gold); border-color: var(--gold); }
+
+.btn-danger { border-color: var(--feu); color: var(--feu); }
+.btn-danger:hover:not(:disabled) { background: rgba(255, 106, 61, 0.12); color: var(--feu); border-color: var(--feu); }

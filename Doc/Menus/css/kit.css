@@ -1,0 +1,51 @@
+/* Ecran Spell Kit Selector (screen-kit), depuis SOLO : carrousel + slots A/E/R + Validate. */
+
+/* overflow-y:auto en secours : les cartes/slots agrandis peuvent depasser la hauteur d'une
+   petite fenetre -- ca reste scrollable plutot que coupe net (le parent ".scene" est en
+   overflow:hidden). */
+#screen-kit { overflow-y: auto; }
+.kit-screen { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 30px; }
+.kit-title { font-size: var(--fs-xl); letter-spacing: 4px; text-transform: uppercase; color: var(--gold); }
+
+.kit-carousel { display: flex; align-items: center; gap: 22px; }
+.kit-arrow { width: 56px; height: 84px; font-size: 24px; border-radius: var(--radius-md); }
+
+.kit-cards { display: flex; gap: var(--sp-4); }
+.kit-card {
+  width: var(--kit-card-w); height: var(--kit-card-h);
+  border-radius: var(--radius-lg);
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: var(--sp-4);
+  cursor: grab; color: var(--text-dim);
+}
+.kit-card svg { width: 72px; height: 72px; }
+.kit-card span { font-size: 13px; letter-spacing: 2px; text-transform: uppercase; }
+.kit-card:hover { border-color: var(--air); color: var(--text); }
+.kit-card.in-loadout { border-color: var(--gold); color: var(--gold); }
+.kit-card.dragging { opacity: 0.4; }
+
+.kit-slots-block { display: flex; flex-direction: column; align-items: center; gap: var(--sp-2); }
+.kit-slots-label { font-size: 11px; letter-spacing: 2px; color: var(--text-dim); text-transform: uppercase; }
+.kit-slots { display: flex; gap: var(--sp-4); }
+.kit-slot {
+  position: relative;
+  width: var(--kit-card-w); height: var(--kit-card-h);
+  border: 2px dashed var(--border); border-radius: var(--radius-lg);
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px;
+  color: var(--text-dim); cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+.kit-slot.filled { border-style: solid; border-color: var(--gold); color: var(--gold); cursor: grab; }
+.kit-slot svg { width: 60px; height: 60px; }
+.kit-slot span { font-size: 12px; letter-spacing: 2px; text-transform: uppercase; }
+.kit-slot.drag-over { border-color: var(--air); background: rgba(191,233,255,0.08); }
+
+.kit-slot-key {
+  position: absolute; top: 10px; left: 10px; width: 26px; height: 26px;
+  display: flex; align-items: center; justify-content: center;
+  border: 1px solid var(--border); border-radius: 5px;
+  font-size: 13px; font-weight: 700; color: var(--text-dim);
+  background: rgba(0,0,0,0.3);
+}
+.kit-slot.filled .kit-slot-key { color: var(--gold); border-color: var(--gold); }
+
+.kit-validate { margin-top: 4px; padding: 16px 48px; font-size: 15px; }

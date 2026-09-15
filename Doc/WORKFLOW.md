@@ -123,3 +123,40 @@ Récurrent dans presque tous les workflows ci-dessus dès qu'une nouvelle action
    concernée + le binder dans `SetupPlayerInputComponent` — **nécessite du C++ et un rebuild
    complet**.
 4. Assigner `IA_X` au champ correspondant sur le Blueprint (`BP_MageCharacter` en général).
+
+---
+
+## Maquette HTML des menus (pré-production, `Doc/Menus/`)
+
+Support de discussion pour l'enchaînement des menus (principal, salon coop, grimoire, spell kit
+selector...) avant intégration réelle en UMG dans Unreal — pas du code de jeu, purement une
+maquette statique HTML/CSS/JS.
+
+**Itérer sur la maquette** :
+1. Ouvrir `Doc/Menus/MainMenu.html` directement dans un navigateur (double-clic, pas de serveur
+   nécessaire — les chemins relatifs vers `css/` et `js/` fonctionnent en `file://`).
+2. Modifier le CSS/JS du fichier concerné :
+   - `css/tokens.css` : variables partagées (couleurs, espacements, rayons) + composants
+     génériques `.panel` (encart flottant) et `.btn`/`.btn-solid`/`.btn-accent`/`.btn-danger`
+     (boutons utilitaires) — à réutiliser plutôt que redéfinir un style au cas par cas.
+   - `css/layout.css` + `js/navigation.js` : chrome partagé entre écrans (menu principal, flyout
+     multijoueur, overlays Paramètres/Quitter, fondu, mécanique `showScreen`).
+   - `css/room.css`+`js/room.js`, `css/spells.css`+`js/spells.js`, `css/kit.css`+`js/kit.js` : un
+     couple de fichiers par écran (Salon, Grimoire, Spell Kit Selector).
+   - `js/spell-data.js` : données de sorts (`SPELL_POOL`) et pictogrammes (formes/éléments/
+     réactions) partagés entre le Grimoire et le Kit Selector.
+3. Rafraîchir le navigateur pour voir le résultat (pas de build nécessaire pour itérer).
+
+**Ajouter un nouvel écran** :
+1. Ajouter son bloc `<div class="screen" id="screen-X">...</div>` dans `MainMenu.html`, avec un
+   `<button class="btn return-btn">← Return</button>` pour le retour — auto-câblé vers le menu
+   principal par `js/navigation.js` (`document.querySelectorAll('.return-btn')`), rien à câbler
+   à la main.
+2. Créer `css/X.css` + `js/X.js`, les référencer dans `MainMenu.html` (`<link>` en tête, `<script
+   src>` avant `</body>`, après `navigation.js`).
+3. Ajouter cette paire de fichiers aux tableaux `$CssFiles`/`$JsFiles` de `build-menu.ps1`.
+
+**Exporter un fichier unique** (pour partager par email, ticket, etc.) : lancer
+`Doc/Menus/build-menu.ps1` → génère `Doc/Menus/MainMenu.compiled.html` (inline tout le CSS/JS
+dans un seul fichier autonome). Sortie regénérable, non commitée (voir `.gitignore`) — ne jamais
+éditer ce fichier directement, toujours repartir de `MainMenu.html` + `css/`/`js/`.

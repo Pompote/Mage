@@ -1,0 +1,162 @@
+/* Chrome partage entre tous les ecrans : scene/fond, mecanique d'ecran, menu principal,
+   flyout multijoueur, bouton retour generique, overlays (Parametres/Quitter), fondu. */
+
+/* ---------- Scene ---------- */
+.scene {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  background:
+    radial-gradient(ellipse at 50% 30%, rgba(90, 60, 160, 0.35), transparent 60%),
+    radial-gradient(ellipse at 50% 100%, rgba(20, 10, 40, 0.9), var(--bg-deep) 70%),
+    linear-gradient(180deg, var(--bg-mid), var(--bg-deep));
+}
+
+canvas#runes { position: absolute; inset: 0; width: 100%; height: 100%; }
+
+/* ---------- Ecrans ---------- */
+.screen { position: absolute; inset: 0; display: none; }
+.screen.active { display: block; }
+
+/* ---------- Titre (screen-main) ---------- */
+.title-block { position: absolute; top: 9%; left: 50%; transform: translateX(-50%); text-align: center; z-index: 5; }
+.title-block h1 {
+  margin: 0;
+  font-size: 64px;
+  letter-spacing: 10px;
+  font-weight: 700;
+  color: var(--gold);
+  text-shadow: 0 0 18px rgba(232, 201, 135, 0.55), 0 0 40px rgba(140, 90, 255, 0.35);
+}
+.title-block p { margin: 6px 0 0; letter-spacing: 4px; font-size: var(--fs-sm); color: var(--text-dim); text-transform: uppercase; }
+
+/* ---------- Menu principal ---------- */
+.menu { position: absolute; left: 9%; bottom: 10%; z-index: 5; display: flex; flex-direction: column; gap: var(--sp-3); }
+
+.menu-btn-wrap { position: relative; }
+
+.menu-btn {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 13px 32px 13px 20px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-left: 3px solid transparent;
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  font-size: var(--fs-lg);
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  cursor: pointer;
+  backdrop-filter: blur(2px);
+  transition: border-left-color 0.25s ease, background 0.25s ease, transform 0.15s ease, box-shadow 0.25s ease;
+  min-width: 250px;
+  width: 100%;
+}
+.menu-btn .glyph { width: 20px; height: 20px; flex-shrink: 0; }
+.menu-btn .glyph svg { width: 100%; height: 100%; display: block; }
+.menu-btn .glyph circle, .menu-btn .glyph rect, .menu-btn .glyph path, .menu-btn .glyph polyline {
+  stroke: var(--text-dim);
+  transition: stroke 0.25s ease, filter 0.25s ease;
+}
+
+.menu-btn:hover, .menu-btn:focus-visible { transform: translateX(6px); background: rgba(40, 26, 62, 0.85); outline: none; }
+
+.menu-btn[data-accent="feu"]:hover   { border-left-color: var(--feu); box-shadow: 0 0 24px -6px var(--feu); }
+.menu-btn[data-accent="air"]:hover   { border-left-color: var(--air); box-shadow: 0 0 24px -6px var(--air); }
+.menu-btn[data-accent="eau"]:hover   { border-left-color: var(--eau); box-shadow: 0 0 24px -6px var(--eau); }
+.menu-btn[data-accent="terre"]:hover { border-left-color: var(--terre); box-shadow: 0 0 24px -6px var(--terre); }
+.menu-btn[data-accent="feu"]:hover .glyph *   { stroke: var(--feu); filter: drop-shadow(0 0 4px var(--feu)); }
+.menu-btn[data-accent="air"]:hover .glyph *   { stroke: var(--air); filter: drop-shadow(0 0 4px var(--air)); }
+.menu-btn[data-accent="eau"]:hover .glyph *   { stroke: var(--eau); filter: drop-shadow(0 0 4px var(--eau)); }
+.menu-btn[data-accent="terre"]:hover .glyph * { stroke: var(--terre); filter: drop-shadow(0 0 4px var(--terre)); }
+
+.menu-btn .label small { display: block; font-size: 9px; letter-spacing: 2px; color: var(--text-dim); text-transform: none; margin-top: 2px; }
+
+.version-tag { position: absolute; left: 9%; bottom: 4%; font-size: var(--fs-sm); color: var(--text-dim); letter-spacing: 2px; z-index: 5; }
+
+/* ---------- Flyout MULTIPLAYER (JOIN / CREATE) ---------- */
+.flyout {
+  position: absolute;
+  top: 0;
+  left: 100%;
+  margin-left: 16px;
+  z-index: 6;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  padding: 10px;
+  border-radius: 6px;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateX(-8px);
+  transition: opacity 0.2s ease, transform 0.2s ease;
+  white-space: nowrap;
+}
+.flyout.open { opacity: 1; pointer-events: auto; transform: translateX(0); }
+.flyout button {
+  padding: 9px 22px;
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text);
+  border-radius: var(--radius-sm);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  font-size: var(--fs-sm);
+  text-align: left;
+  cursor: pointer;
+}
+.flyout button:hover { background: rgba(140, 100, 255, 0.18); border-color: var(--air); }
+.flyout button small { display: block; font-size: 9px; color: var(--text-dim); letter-spacing: 1px; text-transform: none; margin-top: 2px; }
+
+/* ---------- Bouton retour generique (RETURN) ---------- */
+/* A droite, pas a gauche : le bloc ".mockup-note" est fixed top-left avec un z-index eleve et
+   masquait ce bouton (donc les clics ne l'atteignaient jamais) quand il etait aussi a gauche.
+   Auto-cable vers le menu principal en JS pour n'importe quel ecran (voir js/navigation.js). */
+.return-btn { position: absolute; top: 24px; right: 24px; z-index: 6; padding: 10px 20px; }
+
+/* ---------- Panneau Options (overlay) ---------- */
+.overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  background: rgba(4, 2, 10, 0.55);
+}
+.overlay.open { display: flex; }
+
+.options-panel { width: 420px; padding: 28px 30px; box-shadow: 0 0 60px rgba(120, 80, 220, 0.25); }
+.options-panel h2 {
+  margin: 0 0 20px;
+  font-size: var(--fs-xl);
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--gold);
+  border-bottom: 1px solid var(--border);
+  padding-bottom: var(--sp-3);
+}
+.option-row { display: flex; align-items: center; justify-content: space-between; gap: var(--sp-4); margin-bottom: 18px; font-size: var(--fs-md); letter-spacing: 1px; }
+.option-row input[type="range"] { flex: 1; accent-color: var(--air); }
+.option-row select { background: rgba(0,0,0,0.35); color: var(--text); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 4px 8px; }
+.option-row .val { width: 34px; text-align: right; color: var(--text-dim); font-size: var(--fs-sm); }
+
+.options-close { display: block; margin: 10px auto 0; padding: 8px 22px; }
+
+/* ---------- Confirmation Quitter ---------- */
+.confirm-panel { width: 340px; padding: 26px 28px; text-align: center; }
+.confirm-panel p { margin: 0 0 20px; font-size: 15px; color: var(--text); letter-spacing: 1px; }
+.confirm-actions { display: flex; justify-content: center; gap: var(--sp-4); }
+.confirm-actions button { padding: 8px 20px; }
+
+/* ---------- Fondu de transition ---------- */
+.fade-out { position: absolute; inset: 0; background: #000; opacity: 0; pointer-events: none; z-index: 40; transition: opacity 0.6s ease; }
+.fade-out.active { opacity: 1; }
+.fade-out span {
+  position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+  color: var(--text-dim); letter-spacing: 4px; font-size: 13px; opacity: 0; transition: opacity 0.4s ease 0.4s;
+}
+.fade-out.active span { opacity: 1; }
