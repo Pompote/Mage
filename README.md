@@ -7,7 +7,7 @@
 Décrire le jeu en une phrase simple :
 - Un jeu d'action où le joueur dessine des formes magiques pour invoquer des pouvoirs en temps réel.
   
-### Refs
+### Refs Miro
 
 <iframe width="768" height="432" src="https://miro.com/app/live-embed/uXjVHm__PcA=/?embedMode=view_only_without_ui&moveToViewport=-18195,-885,44671,22172&embedId=30809206611" frameborder="0" scrolling="no" allow="fullscreen; clipboard-read; clipboard-write" allowfullscreen></iframe>
 
