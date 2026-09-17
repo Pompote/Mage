@@ -1,4 +1,4 @@
-# Brainstorm Gameplay - [Nom du jeu]
+# Brainstorm Gameplay - Siglyph  
 
 > Ce fichier garde la vision, les décisions de design et le statut d'implémentation. Pour les
 > procédures pratiques ("comment j'ajoute un sort/élément/ennemi..."), voir `Doc/WORKFLOW.md`. Pour
@@ -201,12 +201,41 @@ principe déjà établi du buffer : viser/déclencher se décide au moment du ca
 | Feu   | Eau   | **Brume**                | gêne la visée/visibilité |
 | Eau   | Terre | **Boue**                 | terrain qui ralentit |
 | Feu   | Terre | **Roche incandescente**  | zone de dégâts continus |
-| Feu   | Air   | **Foudre**               | dégâts ponctuels rapides, pourrait enchaîner entre cibles groupées |
-| Eau   | Air   | **Trombe d'eau**         | contrôle de foule, attire les ennemis proches |
-| Terre | Air   | **Tempête de poussière** | debuff de précision/visibilité en zone |
+| Feu   | Air   | **Spread feu**           | spread feu |
+| Eau   | Air   | **Trombe d'eau**         | spread eau |
+| Terre | Air   | **Tempête de poussière** | aveugle les ennemis marche random |
+| Foudre | Eau  | **Stun**                 | Immobilise les ennemis mouillés   |
+| Foudre | Feu  | **Feu électrique**       | Degats massifs avec multiplicateur |
+| Foudre | Air  | **Tempête de foudre**    |  |
+
+
 
 Répartition volontaire entre dégâts/contrôle/terrain/debuff, pour que plusieurs styles de jeu
 restent viables (objectif d'équilibre) — à ajuster une fois testé en jeu.
+Certains éléments peuvent perdurer sur toutes les surfaces, exemple : feu sur le sol tiens quelque secondes pendant lesquels il peut réagir avec autre chose.
+
+| Element | Peut subsister sur n'importe quelle surface | Imprêgne un ennemi |
+|---------|-------|-------|
+| Feu     | Oui : Flammes | Imprêgne un ennemi |
+| Eau     | Oui : Effet mouillé | Imprêgne un ennemi |
+| Terre   | Oui : Effet marron/terre avec aspérité + volume | Imprêgne un ennemi |   
+| Vent    | Non | Imprêgne un ennemi |
+| Foudre  | Non | Imprêgne un ennemi |
+
+| Sort         | Element   | tageté/aoe | Imprêgne un ennemi | toutes surfaces | Description|
+|--------------|-----------|------------|--------------------|-----------------|-|
+| Boule de feu   | Feu       | target     | Oui | Oui | |
+| Mur de feu     | Feu       | aoe        | Oui | Oui ||
+| Boule d'eau    | Eau       | target     | Oui | Oui ||
+| Flaque d'eau   | Eau       | aoe        | Oui | Oui ||
+| Boule de terre | Terre     | target     | Oui | Oui ||
+| Mur de terre   | Terre     | aoe        | Non | Oui ||
+| Eclair         | Foudre    | target     | Oui | Non | |
+| champ electrique | Foudre  | target     | Oui | Oui | |
+| vent violent     | air     | aoe        | Non | Oui | Cône de vent qui spread les éléments feu, eau, terre |
+| vent libération  | air     | aoe        | Non | Oui | Repousse tous les ennemis à proximité |  
+
+
 
 ### Affinités élémentaires par type d'ennemi
 
@@ -270,9 +299,11 @@ monstres/boss
 
 ## Ennemis / adversaires
 
-| Ennemi | Comportement | Faiblesse |
-|-|-|-|
-| | | |
+| Ennemi  | vitesse | PV        | Faiblesse | Resistance |
+|---------|---------|-----------|-----------|------------|
+| Gobelin | rapide  | Faible    | fonction couleur |  
+| Gobelin | | |
+| Gobelin | | |
 
 # 6. Progression
 
