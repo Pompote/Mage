@@ -2,12 +2,15 @@
 
 #include "Enemies/MageEnemyCharacter.h"
 
+#include "Animation/AnimSequence.h"
+#include "Components/SkeletalMeshComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Elements/ElementalStatusComponent.h"
 #include "Elements/ElementFunctionLibrary.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Kismet/GameplayStatics.h"
 #include "Materials/MaterialInstanceDynamic.h"
+#include "Particles/ParticleSystemComponent.h"
 #include "UObject/ConstructorHelpers.h"
 
 AMageEnemyCharacter::AMageEnemyCharacter()
@@ -27,6 +30,13 @@ AMageEnemyCharacter::AMageEnemyCharacter()
 	}
 
 	ElementalStatus = CreateDefaultSubobject<UElementalStatusComponent>(TEXT("ElementalStatus"));
+
+	FireVFX = CreateDefaultSubobject<UParticleSystemComponent>(TEXT("FireVFX"));
+	FireVFX->SetupAttachment(GetMesh(), TEXT("FireSocket"));
+	FireVFX->bAutoActivate = false;
+	// P_Fire_Big a l'echelle 1 est enorme (couvre tout l'ecran a bout portant) -- reduit pour un feu
+	// de personnage plutot qu'un brasier
+	FireVFX->SetRelativeScale3D(FVector(0.35f));
 }
 
 void AMageEnemyCharacter::BeginPlay()
@@ -48,6 +58,32 @@ void AMageEnemyCharacter::BeginPlay()
 		UE_LOG(LogTemp, Warning, TEXT("MageEnemyCharacter: BaseTintMaterial non assigne dans l'editeur -- pas de teinte possible"));
 	}
 
+	// Un vrai squelette a ete assigne a GetMesh() (ex: le Goblin) plutot que de rester sur le
+	// PlaceholderMesh (capsule) -- applique la meme teinte dynamique dessus et cache la capsule pour
+	// eviter un double mesh si quelqu'un a oublie de vider son Static Mesh sur ce Blueprint.
+	if (GetMesh() && GetMesh()->GetSkeletalMeshAsset())
+	{
+		if (TintMaterial)
+		{
+			for (int32 SlotIndex = 0; SlotIndex < GetMesh()->GetNumMaterials(); ++SlotIndex)
+			{
+				GetMesh()->SetMaterial(SlotIndex, TintMaterial);
+			}
+		}
+
+		PlaceholderMesh->SetVisibility(false);
+
+		if (IdleAnimation)
+		{
+			GetMesh()->PlayAnimation(IdleAnimation, true);
+		}
+	}
+
+	if (FireLoopVFXTemplate)
+	{
+		FireVFX->SetTemplate(FireLoopVFXTemplate);
+	}
+
 	if (ElementalStatus)
 	{
 		ElementalStatus->OnElementChanged.AddDynamic(this, &AMageEnemyCharacter::HandleElementChanged);
@@ -58,6 +94,25 @@ void AMageEnemyCharacter::HandleElementChanged(EElement NewElement)
 {
 	UE_LOG(LogTemp, Log, TEXT("MageEnemyCharacter: HandleElementChanged(%s) sur %s, TintMaterial=%s"),
 		*UEnum::GetValueAsString(NewElement), *GetName(), TintMaterial ? TEXT("ok") : TEXT("NULL"));
+
+	// VFX de feu -- independant de TintMaterial (deux reactions visuelles distinctes a NewElement,
+	// l'une ne doit pas dependre de l'autre)
+	if (NewElement == EElement::Fire)
+	{
+		if (FireVFX)
+		{
+			FireVFX->Activate(true);
+		}
+
+		if (IgniteBurstVFXTemplate)
+		{
+			UGameplayStatics::SpawnEmitterAttached(IgniteBurstVFXTemplate, GetMesh(), TEXT("FireSocket"));
+		}
+	}
+	else if (FireVFX)
+	{
+		FireVFX->Deactivate();
+	}
 
 	if (!TintMaterial)
 	{
@@ -117,6 +172,7 @@ void AMageEnemyCharacter::TickSeeking(float DeltaTime)
 	const FVector ToPlayer = PlayerPawn->GetActorLocation() - GetActorLocation();
 	if (ToPlayer.Size() <= StopDistance)
 	{
+		SetRunning(false);
 		return;
 	}
 
@@ -124,7 +180,22 @@ void AMageEnemyCharacter::TickSeeking(float DeltaTime)
 	Direction.Z = 0.f;
 	if (Direction.Normalize())
 	{
+		SetRunning(true);
 		AddMovementInput(Direction, 1.f);
+	}
+}
+
+void AMageEnemyCharacter::SetRunning(bool bRunning)
+{
+	if (bRunning == bIsRunning || !GetMesh() || !GetMesh()->GetSkeletalMeshAsset())
+	{
+		return;
+	}
+	bIsRunning = bRunning;
+
+	if (UAnimSequence* NextAnim = bRunning ? RunAnimation : IdleAnimation)
+	{
+		GetMesh()->PlayAnimation(NextAnim, true);
 	}
 }
 
@@ -160,6 +231,7 @@ void AMageEnemyCharacter::OnGrabbed_Implementation(AActor* Grabber)
 	MotionState = EEnemyMotionState::Held;
 	GetCharacterMovement()->StopMovementImmediately();
 	GetCharacterMovement()->SetMovementMode(MOVE_Flying);
+	SetRunning(false);
 }
 
 void AMageEnemyCharacter::OnThrown_Implementation(AActor* Thrower, const FVector& ThrowVelocity)

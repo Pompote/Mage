@@ -8,9 +8,12 @@
 #include "Grab/GrabbableInterface.h"
 #include "MageEnemyCharacter.generated.h"
 
+class UAnimSequence;
 class UElementalStatusComponent;
 class UMaterialInstanceDynamic;
 class UMaterialInterface;
+class UParticleSystem;
+class UParticleSystemComponent;
 class UStaticMeshComponent;
 
 // Etat de deplacement de l'ennemi -- determine ce que fait Tick() chaque frame
@@ -62,6 +65,31 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Element", meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UMaterialInstanceDynamic> TintMaterial;
 
+	// Particule bouclee jouee tant que cet ennemi porte le Feu -- activee/desactivee par
+	// HandleElementChanged, pas par ApplyElement/ElementalStatusComponent (qui ne connaissent rien
+	// au VFX, voir Elements.md). Template assigne dans l'editeur (ex: P_Fire_Big), meme principe que
+	// BaseTintMaterial. Attachee au socket "FireSocket" du mesh si le squelette assigne en a un,
+	// sinon retombe sur l'origine du composant.
+	UPROPERTY(EditDefaultsOnly, Category = "Element")
+	TObjectPtr<UParticleSystem> FireLoopVFXTemplate;
+
+	// Effet ponctuel joue une fois au moment ou le Feu s'applique (pas au moment ou il expire) --
+	// ex: P_Molotov ou P_Embers_A
+	UPROPERTY(EditDefaultsOnly, Category = "Element")
+	TObjectPtr<UParticleSystem> IgniteBurstVFXTemplate;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Element", meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<UParticleSystemComponent> FireVFX;
+
+	// Anims jouees en boucle sur GetMesh() si un vrai squelette est assigne (pas d'AnimBP dans le
+	// projet -- simple lecture en boucle via PlayAnimation, voir SetRunning). IdleAnimation par
+	// defaut (BeginPlay), RunAnimation pendant que TickSeeking fait effectivement avancer l'ennemi.
+	UPROPERTY(EditDefaultsOnly, Category = "Mesh")
+	TObjectPtr<UAnimSequence> IdleAnimation;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Mesh")
+	TObjectPtr<UAnimSequence> RunAnimation;
+
 	// Vitesse de marche vers le joueur le plus proche
 	UPROPERTY(EditAnywhere, Category = "AI")
 	float WalkSpeed = 200.f;
@@ -82,8 +110,13 @@ private:
 	// UCharacterMovementComponent (voir commentaire de TickThrown).
 	FVector ThrownVelocity = FVector::ZeroVector;
 
+	// Anim actuellement jouee (Run vs Idle) -- evite de rappeler PlayAnimation chaque frame tant que
+	// l'etat ne change pas reellement (un appel repete redemarrerait l'anim a la frame 0)
+	bool bIsRunning = false;
+
 	void TickSeeking(float DeltaTime);
 	void TickThrown(float DeltaTime);
+	void SetRunning(bool bRunning);
 
 	UFUNCTION()
 	void HandleElementChanged(EElement NewElement);
