@@ -194,6 +194,82 @@ porté par l'acteur touché, pendant une durée limitée. Deux façons de le fai
 Puisque la réaction se joue à l'impact et pas à la préparation, elle reste compatible avec le
 principe déjà établi du buffer : viser/déclencher se décide au moment du cast, pas du dessin.
 
+### Table des sorts
+
+Liste des sorts disponibles pour un mage :
+
+Sorts offensifs :
+
+| Sort         | Element   | Tageté/aoe | Imprêgne un ennemi | Toutes surfaces |  spreadable | Description|
+|--------------|-----------|------------|--------------------|-----------------|-|-|
+| **Boule de feu**   | Feu       | target     | Oui | Oui | vent | Sphère de feu subissant la gravité |
+| **Mur de feu**     | Feu       | aoe        | Oui | Oui | vent | Mur de feu perpendiculaire à l'axe du joueur |
+| **Boule d'eau**    | Eau       | target     | Oui | Oui | Oui | Sphère d'eau subissant la gravité |
+| **Flaque d'eau**   | Eau       | aoe        | Oui | Oui | Oui | grosse flaque d'eau projectile qui se répand une fois qu'il touche le sol, ralenti les énemis |
+| **Boule de terre** | Terre     | target     | Oui | Oui | Oui | Sphère de terre subissant la gravité |
+| **Mur de terre**  | Terre     | aoe        | Non | Oui | Oui | Mur de feu perpendiculaire à l'axe du joueur (molette pour tourner le sort ?) |
+| **Eclair**         | Foudre    | target     | Oui | Non | Oui | Sort rectiligne electrique dirigé vers l'endroit visé |
+| **champ electrique** | Foudre  | target     | Oui | Oui | Oui | projectile éléctrique qui se répand une fois qu'il touche le sol |
+| **vent violent**     | air     | aoe        | Non | Non | Oui | Cône de vent qui spread les éléments spreadable |
+| **vent libération**  | air     | aoe        | Non | Non | Oui | Repousse tous les ennemis à proximité |
+
+### Table des combinaisons (par sort)
+
+Même principe que la Table des combinaisons ci-dessous, mais au niveau du sort plutôt que de
+l'élément — deux sorts d'un même élément ne réagissent pas entre eux (juste un rafraîchissement de
+durée, voir plus bas), donc seules les paires inter-éléments sont listées.
+
+| Sort 1              | Sort 2               | Effet |
+|---------------------|----------------------|-------|
+| Boule de feu        | Boule d'eau          | brume + disparition des deux |
+| Boule de feu        | Flaque d'eau         | brume + disparition boule de feu |
+| Boule de feu        | Boule de terre       | roche incandescante + disparition des deux |
+| Boule de feu        | Mur de terre         | roche incandescante + disparition boule de feu |
+| Boule de feu        | Eclair               | foudre enflammée + trajectoire éclair, disparition boule de feu |
+| Boule de feu        | champ electrique     | foudre enflammée dans une zone petite zone à l'atterrissage |
+| Boule de feu        | vent violent         | Feu spread en cône dans le sens du vent |
+| Boule de feu        | vent libération      | Feu spread en cône dans le sens du vent |
+| Mur de feu          | Boule d'eau          | Brume + disparition boule d'eau |
+| Mur de feu          | Flaque d'eau         | Brume énorme + disparition des deux |
+| Mur de feu          | Boule de terre       | Boule incandescente + sol incandescent en petite zone à l'atterrissage |
+| Mur de feu          | Mur de terre         | Mur incandescent |
+| Mur de feu          | Eclair               | foudre enflammée + trajectoire éclair, aucune disparition |
+| Mur de feu          | champ electrique     | foudre enflammée sur toute la surface au sol touché par le feu |
+| Mur de feu          | vent violent         | propagation du feu en cone en suivant le vent |
+| Mur de feu          | vent libération      | propagation du feu en cone en suivant le vent |
+| Boule d'eau         | Boule de terre       | Boule de boue + sol boueux en petite zone à l'atterrissage |
+| Boule d'eau         | Mur de terre         | zone de boue sur le mur de terre de la taille de la boule, disparition boule |
+| Boule d'eau         | Eclair               | boule d'eau devient electrifiée (stun amélioré) et continue sa course, éclair disparait |
+| Boule d'eau         | champ electrique     | eau électrifiée par terre (stun amélioré) |
+| Boule d'eau         | vent violent         | Eau spread (gouttes) en cône dans le sens du vent |
+| Boule d'eau         | vent libération      | Eau spread (gouttes) en cône dans le sens du vent |
+| Flaque d'eau        | Boule de terre       | Boue à l'emplacement de la boule de terre |
+| Flaque d'eau        | Mur de terre         | Mur de boue sur toute la surface au sol touché par l'eau |
+| Flaque d'eau        | Eclair               | électrocute la flaque dans une zone petite zone à l'atterrissage (stun amélioré) |
+| Flaque d'eau        | champ electrique     | électrocute sur la superposition des deux (stun amélioré) |
+| Flaque d'eau        | vent violent         | spread en cône (la moitié du cône est dans le sol) |
+| Flaque d'eau        | vent libération      | spread en cône (la moitié du cône est dans le sol) |
+| Boule de terre      | Eclair               | éclair disparait, boule de terre continue sa course |
+| Boule de terre      | champ electrique     | aucune interaction |
+| Boule de terre      | vent violent         | éclats de roches spread en cône dans le sens du vent |
+| Boule de terre      | vent libération      | éclats de roches spread en cône dans le sens du vent |
+| Mur de terre        | Eclair               | aucune interaction |
+| Mur de terre        | champ electrique     | aucune interaction |
+| Mur de terre        | vent violent         | éclats de roches spread en cône dans le sens du vent |
+| Mur de terre        | vent libération      | éclats de roches spread en cône dans le sens du vent |
+| Eclair              | vent violent         | foudre spread en cônes (petits éclairs) dans le sens du vent |
+| Eclair              | vent libération      | foudre spread en cônes (petits éclairs) dans le sens du vent |
+| champ electrique    | vent violent         | foudre spread en cônes (petits éclairs, large distance) dans le sens du vent |
+| champ electrique    | vent libération      | foudre spread en cônes (petits éclairs, large distance) dans le sens du vent |
+
+Le vent, en plus de spread certains éléments, agit également sur la trajectoire des projectiles.
+
+Sorts de déplacement :
+
+| Sort         | Element   | Tageté/aoe | Imprêgne un ennemi | Toutes surfaces |  spreadable | Description|
+|--------------|-----------|------------|--------------------|-----------------|-|-|
+| vent libération  | air     | aoe        | Non | Non | Oui | Repousse tous les ennemis à proximité |
+
 ### Table des combinaisons
 
 | A     | B     | Résultat                 | Rôle visé |
@@ -205,37 +281,18 @@ principe déjà établi du buffer : viser/déclencher se décide au moment du ca
 | Eau   | Air   | **Trombe d'eau**         | spread eau |
 | Terre | Air   | **Tempête de poussière** | aveugle les ennemis marche random |
 | Foudre | Eau  | **Stun**                 | Immobilise les ennemis mouillés   |
-| Foudre | Feu  | **Feu électrique**       | Degats massifs avec multiplicateur |
-| Foudre | Air  | **Tempête de foudre**    |  |
-
-
+| Foudre | Feu  | **enflamme l'air**       | Degats massifs avec multiplicateur |
+| Foudre | Air  | **électrise l'air**      | Degats massifs avec multiplicateur |
 
 Répartition volontaire entre dégâts/contrôle/terrain/debuff, pour que plusieurs styles de jeu
 restent viables (objectif d'équilibre) — à ajuster une fois testé en jeu.
 Certains éléments peuvent perdurer sur toutes les surfaces, exemple : feu sur le sol tiens quelque secondes pendant lesquels il peut réagir avec autre chose.
 
-| Element | Peut subsister sur n'importe quelle surface | Imprêgne un ennemi |
-|---------|-------|-------|
-| Feu     | Oui : Flammes | Imprêgne un ennemi |
-| Eau     | Oui : Effet mouillé | Imprêgne un ennemi |
-| Terre   | Oui : Effet marron/terre avec aspérité + volume | Imprêgne un ennemi |   
-| Vent    | Non | Imprêgne un ennemi |
-| Foudre  | Non | Imprêgne un ennemi |
-
-| Sort         | Element   | tageté/aoe | Imprêgne un ennemi | toutes surfaces | Description|
-|--------------|-----------|------------|--------------------|-----------------|-|
-| Boule de feu   | Feu       | target     | Oui | Oui | |
-| Mur de feu     | Feu       | aoe        | Oui | Oui ||
-| Boule d'eau    | Eau       | target     | Oui | Oui ||
-| Flaque d'eau   | Eau       | aoe        | Oui | Oui ||
-| Boule de terre | Terre     | target     | Oui | Oui ||
-| Mur de terre   | Terre     | aoe        | Non | Oui ||
-| Eclair         | Foudre    | target     | Oui | Non | |
-| champ electrique | Foudre  | target     | Oui | Oui | |
-| vent violent     | air     | aoe        | Non | Oui | Cône de vent qui spread les éléments feu, eau, terre |
-| vent libération  | air     | aoe        | Non | Oui | Repousse tous les ennemis à proximité |  
 
 
+> Ajouter des buffs ?  
+> Sorts puissants qui coutent plus cher que juste un cooldown ?  
+> Sorts d'aura ?  
 
 ### Affinités élémentaires par type d'ennemi
 
