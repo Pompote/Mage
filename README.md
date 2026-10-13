@@ -198,20 +198,27 @@ principe déjà établi du buffer : viser/déclencher se décide au moment du ca
 
 Liste des sorts disponibles pour un mage :
 
+Colonne "Forme" = le geste dessiné à la souris qui déclenche le sort (voir Mécanique #1). Seules
+**Cercle**, **Carré** et **Triangle** existent aujourd'hui comme formes entraînées/reconnues (voir
+`Content/Spells/Shapes/`) ; les 7 autres sont des propositions à dessiner/entraîner plus tard
+(chantier séparé, voir `Doc/claude-plan.md`) — à ajuster librement si une forme se dessine mal ou se
+confond trop avec une autre une fois testée (voir le point ouvert dans `Doc/Systems/GestureRecognition.md`
+sur les confusions déjà observées).
+
 Sorts offensifs :
 
-| Sort         | Element   | Tageté/aoe | Imprêgne un ennemi | Toutes surfaces |  spreadable | Description|
-|--------------|-----------|------------|--------------------|-----------------|-|-|
-| **Boule de feu**   | Feu       | target     | Oui | Oui | vent | Sphère de feu subissant la gravité |
-| **Mur de feu**     | Feu       | aoe        | Oui | Oui | vent | Mur de feu perpendiculaire à l'axe du joueur |
-| **Boule d'eau**    | Eau       | target     | Oui | Oui | Oui | Sphère d'eau subissant la gravité |
-| **Flaque d'eau**   | Eau       | aoe        | Oui | Oui | Oui | grosse flaque d'eau projectile qui se répand une fois qu'il touche le sol, ralenti les énemis |
-| **Boule de terre** | Terre     | target     | Oui | Oui | Oui | Sphère de terre subissant la gravité |
-| **Mur de terre**  | Terre     | aoe        | Non | Oui | Oui | Mur de feu perpendiculaire à l'axe du joueur (molette pour tourner le sort ?) |
-| **Eclair**         | Foudre    | target     | Oui | Non | Oui | Sort rectiligne electrique dirigé vers l'endroit visé |
-| **champ electrique** | Foudre  | target     | Oui | Oui | Oui | projectile éléctrique qui se répand une fois qu'il touche le sol |
-| **vent violent**     | air     | aoe        | Non | Non | Oui | Cône de vent qui spread les éléments spreadable |
-| **vent libération**  | air     | aoe        | Non | Non | Oui | Repousse tous les ennemis à proximité |
+| Sort         | Forme | Element   | Tageté/aoe | Imprêgne un ennemi | Toutes surfaces |  spreadable | Description|
+|--------------|-------|-----------|------------|--------------------|-----------------|-|-|
+| **Boule de feu**   | Cercle | Feu       | target     | Oui | Oui | vent | Sphère de feu subissant la gravité |
+| **Mur de feu**     | Trait | Feu       | aoe        | Oui | Oui | vent | Mur de feu perpendiculaire à l'axe du joueur |
+| **Boule d'eau**    | Spirale | Eau       | target     | Oui | Oui | Oui | Sphère d'eau subissant la gravité |
+| **Flaque d'eau**   | Triangle | Eau       | aoe        | Oui | Oui | Oui | grosse flaque d'eau projectile qui se répand une fois qu'il touche le sol, ralenti les énemis |
+| **Boule de terre** | Carré | Terre     | target     | Oui | Oui | Oui | Sphère de terre subissant la gravité |
+| **Mur de terre**  | Crénelures | Terre     | aoe        | Non | Oui | Oui | Mur de feu perpendiculaire à l'axe du joueur (molette pour tourner le sort ?) |
+| **Eclair**         | Zigzag | Foudre    | target     | Oui | Non | Oui | Sort rectiligne electrique dirigé vers l'endroit visé |
+| **champ electrique** | Étoile | Foudre  | target     | Oui | Oui | Oui | projectile éléctrique qui se répand une fois qu'il touche le sol |
+| **vent violent**     | Flèche | air     | aoe        | Non | Non | Oui | Cône de vent qui spread certains éléments et modifie les trajectoires des projectiles |
+| **vent libération**  | Infini (∞) | air     | aoe        | Non | Non | Oui | Repousse tous les ennemis à proximité et applique les mêmes effets que vent violent mais de manière circulaire |
 
 ### Table des combinaisons (par sort)
 
@@ -266,9 +273,9 @@ Le vent, en plus de spread certains éléments, agit également sur la trajectoi
 
 Sorts de déplacement :
 
-| Sort         | Element   | Tageté/aoe | Imprêgne un ennemi | Toutes surfaces |  spreadable | Description|
-|--------------|-----------|------------|--------------------|-----------------|-|-|
-| vent libération  | air     | aoe        | Non | Non | Oui | Repousse tous les ennemis à proximité |
+| Sort         | Forme | Element   | Tageté/aoe | Imprêgne un ennemi | Toutes surfaces |  spreadable | Description|
+|--------------|-------|-----------|------------|--------------------|-----------------|-|-|
+| vent libération  | Infini (∞) | air     | aoe        | Non | Non | Oui | Repousse tous les ennemis à proximité |
 
 ### Table des combinaisons
 
@@ -277,18 +284,16 @@ Sorts de déplacement :
 | Feu   | Eau   | **Brume**                | gêne la visée/visibilité |
 | Eau   | Terre | **Boue**                 | terrain qui ralentit |
 | Feu   | Terre | **Roche incandescente**  | zone de dégâts continus |
-| Feu   | Air   | **Spread feu**           | spread feu |
-| Eau   | Air   | **Trombe d'eau**         | spread eau |
-| Terre | Air   | **Tempête de poussière** | aveugle les ennemis marche random |
-| Foudre | Eau  | **Stun**                 | Immobilise les ennemis mouillés   |
-| Foudre | Feu  | **enflamme l'air**       | Degats massifs avec multiplicateur |
-| Foudre | Air  | **électrise l'air**      | Degats massifs avec multiplicateur |
+| Feu   | Air   | **Spread feu**           | flammes attisées |
+| Eau   | Air   | **Spread eau**           | gouttes d'eau |
+| Terre | Air   | **Spread terre**         | éclats de roches |
+| Foudre | Eau  | **Stun**                 | electrise l'eau, stun en cas contact   |
+| Foudre | Feu  | **feu avec éclairs**     | Degats massifs avec multiplicateur |
+| Foudre | Air  | **Spread éclair**        | petits éclairs longue portée |
 
 Répartition volontaire entre dégâts/contrôle/terrain/debuff, pour que plusieurs styles de jeu
 restent viables (objectif d'équilibre) — à ajuster une fois testé en jeu.
 Certains éléments peuvent perdurer sur toutes les surfaces, exemple : feu sur le sol tiens quelque secondes pendant lesquels il peut réagir avec autre chose.
-
-
 
 > Ajouter des buffs ?  
 > Sorts puissants qui coutent plus cher que juste un cooldown ?  

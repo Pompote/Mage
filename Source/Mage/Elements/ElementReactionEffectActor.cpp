@@ -16,3 +16,7 @@ void AElementReactionEffectActor::BeginPlay()
 	DrawDebugSphere(GetWorld(), GetActorLocation(), 50.f, 12, DebugColor, false, LifetimeSeconds);
 	SetLifeSpan(LifetimeSeconds);
 }
+
+void AElementReactionEffectActor::Setup_Implementation(AActor* TargetActor, AActor* SourceActor, EElement ElementA, EElement ElementB)
+{
+}

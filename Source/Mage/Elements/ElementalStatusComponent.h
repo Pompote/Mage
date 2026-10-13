@@ -35,16 +35,26 @@ public:
 	UPROPERTY(EditAnywhere, Category = "Element")
 	float BaseElementDurationSeconds = 6.f;
 
-	// Applique NewElement a cet acteur :
+	// Applique NewElement (pose par le sort/porteur identifie par NewSpellId, voir
+	// USpellDefinition::SpellId -- None si l'appelant n'a pas d'identite de sort a donner) a cet
+	// acteur :
 	//  - aucun element present -> pose le statut, duree = base * multiplicateur d'affinite
-	//  - meme element deja present -> rafraichit simplement la duree
-	//  - element DIFFERENT deja present -> declenche la reaction (log pour l'instant) puis efface
-	//    le statut
+	//  - meme element deja present -> rafraichit simplement la duree (et retient NewSpellId comme
+	//    source la plus recente)
+	//  - element DIFFERENT deja present -> resout la reaction via UElementReactionSubsystem, d'abord
+	//    au niveau du sort (CurrentSpellId/NewSpellId) puis, a defaut, au niveau de l'element
+	//    (CurrentElement/NewElement) -- voir Doc/claude-plan.md
 	UFUNCTION(BlueprintCallable, Category = "Element")
-	void ApplyElement(EElement NewElement, AActor* SourceActor = nullptr, FVector ContactLocation = FVector::ZeroVector);
+	void ApplyElement(EElement NewElement, FName NewSpellId = NAME_None, AActor* SourceActor = nullptr, FVector ContactLocation = FVector::ZeroVector);
 
 	UFUNCTION(BlueprintPure, Category = "Element")
 	EElement GetCurrentElement() const { return CurrentElement; }
+
+	// Identite du sort actuellement responsable du statut porte (voir USpellDefinition::SpellId) --
+	// None si aucun statut, ou si le statut actuel vient d'un resultat de reaction compose plutot
+	// que directement d'un sort (voir ApplyElement).
+	UFUNCTION(BlueprintPure, Category = "Element")
+	FName GetCurrentSpellId() const { return CurrentSpellId; }
 
 	UFUNCTION(BlueprintPure, Category = "Element")
 	bool HasElement() const { return CurrentElement != EElement::None; }
@@ -64,10 +74,11 @@ public:
 
 private:
 	EElement CurrentElement = EElement::None;
+	FName CurrentSpellId;
 	FTimerHandle ExpiryTimerHandle;
 
 	float GetDurationSeconds(EElement Element) const;
-	void SetElementInternal(EElement NewElement, float DurationSeconds);
+	void SetElementInternal(EElement NewElement, FName NewSpellId, float DurationSeconds);
 
 	UFUNCTION()
 	void HandleExpiry();

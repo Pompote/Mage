@@ -5,6 +5,7 @@
 #include "Camera/CameraComponent.h"
 #include "GameFramework/Actor.h"
 #include "GameFramework/Pawn.h"
+#include "Spells/SpellDefinition.h"
 #include "Spells/SpellProjectile.h"
 
 void UProjectileSpellEffect::Execute_Implementation(const FSpellCastContext& Context)
@@ -32,5 +33,12 @@ void UProjectileSpellEffect::Execute_Implementation(const FSpellCastContext& Con
 	if (ASpellProjectile* Projectile = Caster->GetWorld()->SpawnActor<ASpellProjectile>(ProjectileClass, SpawnLocation, SpawnRotation, SpawnParams))
 	{
 		Projectile->SetElement(Context.Element);
+
+		if (Context.SpellDefinition)
+		{
+			Projectile->SetSpellId(Context.SpellDefinition->SpellId);
+			Projectile->SetImprintsEnemy(Context.SpellDefinition->bImprintsEnemy);
+			Projectile->SetPersistsOnAnySurface(Context.SpellDefinition->bPersistsOnAnySurface);
+		}
 	}
 }

@@ -31,6 +31,14 @@ struct FElementAffinityEntry
 	// standard, >1.0 pour un comportement Absorbent (ex: 3.0)
 	UPROPERTY(EditDefaultsOnly, Category = "Element")
 	float DurationMultiplier = 1.f;
+
+	// Multiplie les degats infliges par cet element -- 1.0 = standard, >1.0 = faiblesse (ex: 2.0),
+	// <1.0 = resistance (ex: 0.5). Voir README section "Ennemis" (faiblesses/resistances par type).
+	// Rien ne consomme ce champ pour l'instant : aucun systeme de degats/PV n'existe encore dans le
+	// projet (voir Doc/claude-plan.md) -- le champ existe pour qu'un futur systeme de combat ait
+	// quelque chose a lire, et pour pouvoir deja renseigner de vrais chiffres sur les profils.
+	UPROPERTY(EditDefaultsOnly, Category = "Element")
+	float DamageMultiplier = 1.f;
 };
 
 // Table d'affinite d'un type d'ennemi : une entree par element pertinent. Un element absent de la

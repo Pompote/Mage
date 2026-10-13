@@ -3,14 +3,14 @@
 #include "Spells/SpellRecognitionSubsystem.h"
 
 #include "Engine/AssetManager.h"
-#include "Spells/DollarOneRecognizer.h"
+#include "Spells/PointCloudRecognizer.h"
 #include "Spells/GestureShapeTemplate.h"
 
 void USpellRecognitionSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
 	Super::Initialize(Collection);
 
-	Recognizer = NewObject<UDollarOneRecognizer>(this);
+	Recognizer = NewObject<UPointCloudRecognizer>(this);
 	LoadShapeTemplates();
 }
 

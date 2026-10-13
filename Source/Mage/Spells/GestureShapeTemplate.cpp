@@ -2,7 +2,7 @@
 
 #include "Spells/GestureShapeTemplate.h"
 
-#include "Spells/DollarOneRecognizer.h"
+#include "Spells/PointCloudRecognizer.h"
 
 #if WITH_EDITOR
 #include "Engine/Texture2D.h"
@@ -177,7 +177,7 @@ void UGestureShapeTemplate::BakeFromImage()
 	InkPoints = DownsampleToGrid(InkPoints, CellSize);
 	InkPoints = OrderPointsGreedy(InkPoints);
 
-	const UDollarOneRecognizer* TempRecognizer = NewObject<UDollarOneRecognizer>();
+	const UPointCloudRecognizer* TempRecognizer = NewObject<UPointCloudRecognizer>();
 	NormalizedPoints = TempRecognizer->Normalize(InkPoints);
 
 	MarkPackageDirty();

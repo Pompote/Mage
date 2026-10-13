@@ -16,4 +16,5 @@ enum class EElement : uint8
 	Water	UMETA(DisplayName = "Water"),
 	Earth	UMETA(DisplayName = "Earth"),
 	Air	UMETA(DisplayName = "Air"),
+	Lightning	UMETA(DisplayName = "Lightning"),
 };

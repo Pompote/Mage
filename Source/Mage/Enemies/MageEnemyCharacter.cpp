@@ -134,6 +134,9 @@ void AMageEnemyCharacter::HandleElementChanged(EElement NewElement)
 	case EElement::Air:
 		Color = FLinearColor(0.8f, 0.8f, 0.9f);
 		break;
+	case EElement::Lightning:
+		Color = FLinearColor(1.0f, 0.9f, 0.2f);
+		break;
 	default:
 		Color = FLinearColor(0.3f, 0.3f, 0.3f);
 		break;
@@ -212,7 +215,7 @@ void AMageEnemyCharacter::TickThrown(float DeltaTime)
 	{
 		if (ElementalStatus)
 		{
-			UElementFunctionLibrary::DeliverElementToActor(ElementalStatus->GetCurrentElement(), Hit.GetActor(), this, Hit.Location);
+			UElementFunctionLibrary::DeliverElementToActor(ElementalStatus->GetCurrentElement(), ElementalStatus->GetCurrentSpellId(), Hit.GetActor(), this, Hit.Location);
 			ElementalStatus->ClearElement();
 		}
 

@@ -27,6 +27,23 @@ struct FElementReactionRow
 	// sans toucher au code de resolution ni a cette structure.
 	UPROPERTY(EditDefaultsOnly, Category = "Reaction")
 	TSubclassOf<AActor> ReactionEffectClass;
+
+	// Statut laisse sur la cible apres la reaction -- None (par defaut) = efface completement
+	// (comportement actuel, inchange). Une valeur differente decrit un resultat compose (ex: "eau
+	// electrifiee" = Water + IntensityMultiplier) sans ajouter un nouvel etat a EElement. Voir
+	// Doc/claude-plan.md.
+	UPROPERTY(EditDefaultsOnly, Category = "Reaction")
+	EElement ResultElement = EElement::None;
+
+	// Multiplie la duree de ResultElement (couvre par ex. un statut "ameliore" sans champ dedie).
+	// Sans effet si ResultElement == None.
+	UPROPERTY(EditDefaultsOnly, Category = "Reaction")
+	float IntensityMultiplier = 1.f;
+
+	// Si faux, cette ligne documente explicitement "aucune interaction" -- le statut de la cible
+	// reste intact. Equivalent fonctionnel a l'absence de ligne, juste plus explicite pour l'auteur.
+	UPROPERTY(EditDefaultsOnly, Category = "Reaction")
+	bool bClearTargetStatus = true;
 };
 
 // Table de reaction : exactement 6 lignes pour {Fire,Water,Earth,Air} (voir README "Mecanique #2 :

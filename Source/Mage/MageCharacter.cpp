@@ -314,9 +314,9 @@ void AMageCharacter::DebugApplyRandomElement()
 		return;
 	}
 
-	// 1..4 -> Fire/Water/Earth/Air, jamais None (0)
-	const EElement RandomElement = static_cast<EElement>(FMath::RandRange(1, 4));
-	Status->ApplyElement(RandomElement, this, Hit.Location);
+	// 1..5 -> Fire/Water/Earth/Air/Lightning, jamais None (0)
+	const EElement RandomElement = static_cast<EElement>(FMath::RandRange(1, 5));
+	Status->ApplyElement(RandomElement, NAME_None, this, Hit.Location);
 
 	UE_LOG(LogTemp, Log, TEXT("DEBUG DebugApplyRandomElement -- %s applique a %s"),
 		*UEnum::GetValueAsString(RandomElement), *Hit.GetActor()->GetName());

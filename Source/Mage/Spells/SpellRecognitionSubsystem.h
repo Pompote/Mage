@@ -7,7 +7,7 @@
 #include "Spells/GestureRecognizer.h"
 #include "SpellRecognitionSubsystem.generated.h"
 
-class UDollarOneRecognizer;
+class UPointCloudRecognizer;
 
 // Point d'entree unique pour la reconnaissance de formes, charge une fois par session de jeu.
 // Decouvre tous les UGestureShapeTemplate via l'Asset Manager (voir Config/DefaultGame.ini,
@@ -29,7 +29,7 @@ public:
 
 private:
 	UPROPERTY()
-	TObjectPtr<UDollarOneRecognizer> Recognizer;
+	TObjectPtr<UPointCloudRecognizer> Recognizer;
 
 	TArray<FGestureTemplate> LoadedTemplates;
 

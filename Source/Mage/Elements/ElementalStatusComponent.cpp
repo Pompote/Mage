@@ -12,7 +12,7 @@ UElementalStatusComponent::UElementalStatusComponent()
 	PrimaryComponentTick.bCanEverTick = false;
 }
 
-void UElementalStatusComponent::ApplyElement(EElement NewElement, AActor* SourceActor, FVector ContactLocation)
+void UElementalStatusComponent::ApplyElement(EElement NewElement, FName NewSpellId, AActor* SourceActor, FVector ContactLocation)
 {
 	if (NewElement == EElement::None)
 	{
@@ -21,14 +21,16 @@ void UElementalStatusComponent::ApplyElement(EElement NewElement, AActor* Source
 
 	if (CurrentElement == EElement::None)
 	{
-		SetElementInternal(NewElement, GetDurationSeconds(NewElement));
+		SetElementInternal(NewElement, NewSpellId, GetDurationSeconds(NewElement));
 		return;
 	}
 
 	if (CurrentElement == NewElement)
 	{
 		// Meme element : on rafraichit juste la duree, l'etat visible ne change pas -- pas de
-		// broadcast pour ne pas redeclencher une teinte/VFX qui joue deja
+		// broadcast pour ne pas redeclencher une teinte/VFX qui joue deja. On retient quand meme
+		// NewSpellId : la source la plus recente devient l'identite de reaction pertinente.
+		CurrentSpellId = NewSpellId;
 		if (UWorld* World = GetWorld())
 		{
 			World->GetTimerManager().SetTimer(ExpiryTimerHandle, this, &UElementalStatusComponent::HandleExpiry, GetDurationSeconds(NewElement), false);
@@ -36,7 +38,13 @@ void UElementalStatusComponent::ApplyElement(EElement NewElement, AActor* Source
 		return;
 	}
 
-	// Element different deja present : reaction -- resolue via UElementReactionSubsystem
+	// Element different deja present : reaction -- resolue via UElementReactionSubsystem, d'abord au
+	// niveau du sort (CurrentSpellId/NewSpellId) puis, a defaut, au niveau de l'element (voir
+	// Doc/claude-plan.md)
+	bool bClearTargetStatus = true;
+	EElement ResultElement = EElement::None;
+	float IntensityMultiplier = 1.f;
+
 	if (const UWorld* World = GetWorld())
 	{
 		if (UGameInstance* GameInstance = World->GetGameInstance())
@@ -47,9 +55,24 @@ void UElementalStatusComponent::ApplyElement(EElement NewElement, AActor* Source
 					? ContactLocation
 					: (GetOwner() ? GetOwner()->GetActorLocation() : FVector::ZeroVector);
 
-				ReactionSubsystem->TryReact(CurrentElement, NewElement, Location, SourceActor);
+				ReactionSubsystem->TryReact(CurrentSpellId, CurrentElement, NewSpellId, NewElement, GetOwner(), SourceActor, Location,
+					ResultElement, IntensityMultiplier, bClearTargetStatus);
 			}
 		}
+	}
+
+	if (!bClearTargetStatus)
+	{
+		// Ligne de reaction "aucune interaction" -- le statut actuel reste intact
+		return;
+	}
+
+	if (ResultElement != EElement::None)
+	{
+		// La reaction laisse un statut compose sur la cible (ex: "eau electrifiee") plutot que de
+		// l'effacer -- ne vient plus directement d'un sort precis
+		SetElementInternal(ResultElement, NAME_None, GetDurationSeconds(ResultElement) * IntensityMultiplier);
+		return;
 	}
 
 	ClearElement();
@@ -61,12 +84,14 @@ float UElementalStatusComponent::GetDurationSeconds(EElement Element) const
 	return BaseElementDurationSeconds * Affinity.DurationMultiplier;
 }
 
-void UElementalStatusComponent::SetElementInternal(EElement NewElement, float DurationSeconds)
+void UElementalStatusComponent::SetElementInternal(EElement NewElement, FName NewSpellId, float DurationSeconds)
 {
 	CurrentElement = NewElement;
+	CurrentSpellId = NewSpellId;
 
-	UE_LOG(LogTemp, Log, TEXT("ElementalStatus: %s applique sur %s (duree %.1fs), OnElementChanged.IsBound=%s"),
+	UE_LOG(LogTemp, Log, TEXT("ElementalStatus: %s (sort '%s') applique sur %s (duree %.1fs), OnElementChanged.IsBound=%s"),
 		*UEnum::GetValueAsString(CurrentElement),
+		*CurrentSpellId.ToString(),
 		GetOwner() ? *GetOwner()->GetName() : TEXT("NULL"),
 		DurationSeconds,
 		OnElementChanged.IsBound() ? TEXT("true") : TEXT("false"));
@@ -82,6 +107,7 @@ void UElementalStatusComponent::SetElementInternal(EElement NewElement, float Du
 void UElementalStatusComponent::ClearElement()
 {
 	CurrentElement = EElement::None;
+	CurrentSpellId = NAME_None;
 	OnElementChanged.Broadcast(CurrentElement);
 
 	if (UWorld* World = GetWorld())

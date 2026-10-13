@@ -16,9 +16,11 @@ class MAGE_API UElementFunctionLibrary : public UBlueprintFunctionLibrary
 	GENERATED_BODY()
 
 public:
-	// Retourne false si Element == None, TargetActor est null, ou TargetActor n'a pas de
-	// UElementalStatusComponent (ce dernier cas n'est pas une erreur -- une cible non-elementaire
-	// est juste un non-evenement)
+	// SpellId identifie le sort qui delivre Element (voir USpellDefinition::SpellId) -- None si
+	// l'appelant n'a pas d'identite de sort a donner, auquel cas seule la table de reaction par
+	// element pourra s'appliquer en cas de reaction (voir Doc/claude-plan.md). Retourne false si
+	// Element == None, TargetActor est null, ou TargetActor n'a pas de UElementalStatusComponent (ce
+	// dernier cas n'est pas une erreur -- une cible non-elementaire est juste un non-evenement)
 	UFUNCTION(BlueprintCallable, Category = "Element")
-	static bool DeliverElementToActor(EElement Element, AActor* TargetActor, AActor* SourceActor, FVector ContactLocation);
+	static bool DeliverElementToActor(EElement Element, FName SpellId, AActor* TargetActor, AActor* SourceActor, FVector ContactLocation);
 };

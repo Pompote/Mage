@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "Elements/ElementTypes.h"
 #include "GameFramework/Actor.h"
 #include "ElementReactionEffectActor.generated.h"
 
@@ -16,6 +17,15 @@ class MAGE_API AElementReactionEffectActor : public AActor
 
 public:
 	AElementReactionEffectActor();
+
+	// Appele juste apres le spawn par UElementReactionSubsystem::TryReact, avant BeginPlay -- donne
+	// a un Blueprint enfant de quoi faire quelque chose de specifique a CETTE reaction (referencer
+	// TargetActor/SourceActor, teinter selon ElementA/ElementB, etc.) plutot que juste dessiner une
+	// sphere de debug. Vide par defaut : ne change rien au comportement actuel tant que rien ne le
+	// surcharge. Voir Doc/claude-plan.md.
+	UFUNCTION(BlueprintNativeEvent, Category = "Element")
+	void Setup(AActor* TargetActor, AActor* SourceActor, EElement ElementA, EElement ElementB);
+	virtual void Setup_Implementation(AActor* TargetActor, AActor* SourceActor, EElement ElementA, EElement ElementB);
 
 protected:
 	virtual void BeginPlay() override;

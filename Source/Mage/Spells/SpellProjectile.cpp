@@ -4,7 +4,9 @@
 
 #include "Components/SphereComponent.h"
 #include "Components/StaticMeshComponent.h"
+#include "Elements/ElementalStatusComponent.h"
 #include "Elements/ElementFunctionLibrary.h"
+#include "Elements/SurfaceElementResidue.h"
 #include "GameFramework/ProjectileMovementComponent.h"
 
 ASpellProjectile::ASpellProjectile()
@@ -34,6 +36,8 @@ ASpellProjectile::ASpellProjectile()
 	ProjectileMovement->bShouldBounce = false;
 
 	InitialLifeSpan = 5.f;
+
+	ResidueClass = ASurfaceElementResidue::StaticClass();
 }
 
 void ASpellProjectile::OnHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComponent, FVector NormalImpulse, const FHitResult& Hit)
@@ -41,9 +45,25 @@ void ASpellProjectile::OnHit(UPrimitiveComponent* HitComponent, AActor* OtherAct
 	UE_LOG(LogTemp, Log, TEXT("SpellProjectile: OnHit -- OtherActor=%s Element=%s"),
 		OtherActor ? *OtherActor->GetName() : TEXT("NULL"), *UEnum::GetValueAsString(Element));
 
-	if (Element != EElement::None && OtherActor)
+	const bool bHitStatusCarrier = OtherActor && OtherActor->FindComponentByClass<UElementalStatusComponent>() != nullptr;
+
+	if (Element != EElement::None && bHitStatusCarrier && bImprintsEnemy)
 	{
-		UElementFunctionLibrary::DeliverElementToActor(Element, OtherActor, this, Hit.Location);
+		UElementFunctionLibrary::DeliverElementToActor(Element, SpellId, OtherActor, this, Hit.Location);
+	}
+	else if (Element != EElement::None && bPersistsOnAnySurface && ResidueClass && !bHitStatusCarrier)
+	{
+		// Pas une cible porteuse de statut (donc du decor) -- laisse un residu plutot que de
+		// disparaitre sans rien laisser, voir Doc/claude-plan.md
+		if (UWorld* World = GetWorld())
+		{
+			FActorSpawnParameters SpawnParams;
+			SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+			if (ASurfaceElementResidue* Residue = World->SpawnActor<ASurfaceElementResidue>(ResidueClass, Hit.Location, FRotator::ZeroRotator, SpawnParams))
+			{
+				Residue->ImprintElement(Element, SpellId);
+			}
+		}
 	}
 
 	Destroy();

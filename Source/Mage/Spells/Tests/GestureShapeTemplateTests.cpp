@@ -5,7 +5,7 @@
 #if WITH_DEV_AUTOMATION_TESTS
 
 #include "Spells/GestureShapeTemplate.h"
-#include "Spells/DollarOneRecognizer.h"
+#include "Spells/PointCloudRecognizer.h"
 
 namespace GestureShapeTemplateTestHelpers
 {
@@ -28,7 +28,7 @@ bool FGestureShapeTemplateTest::RunTest(const FString& Parameters)
 {
 	using namespace GestureShapeTemplateTestHelpers;
 
-	UDollarOneRecognizer* Recognizer = NewObject<UDollarOneRecognizer>();
+	UPointCloudRecognizer* Recognizer = NewObject<UPointCloudRecognizer>();
 
 	UGestureShapeTemplate* UnbakedShape = NewObject<UGestureShapeTemplate>();
 	TestFalse(TEXT("Un template fraichement cree sans points n'est pas bake"), UnbakedShape->IsBaked());

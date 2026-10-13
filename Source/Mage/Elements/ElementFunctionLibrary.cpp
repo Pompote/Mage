@@ -5,7 +5,7 @@
 #include "Elements/ElementalStatusComponent.h"
 #include "GameFramework/Actor.h"
 
-bool UElementFunctionLibrary::DeliverElementToActor(EElement Element, AActor* TargetActor, AActor* SourceActor, FVector ContactLocation)
+bool UElementFunctionLibrary::DeliverElementToActor(EElement Element, FName SpellId, AActor* TargetActor, AActor* SourceActor, FVector ContactLocation)
 {
 	if (Element == EElement::None || !TargetActor)
 	{
@@ -19,7 +19,7 @@ bool UElementFunctionLibrary::DeliverElementToActor(EElement Element, AActor* Ta
 		return false;
 	}
 
-	UE_LOG(LogTemp, Log, TEXT("ElementFunctionLibrary: DeliverElementToActor -- %s livre a %s"), *UEnum::GetValueAsString(Element), *TargetActor->GetName());
-	Status->ApplyElement(Element, SourceActor, ContactLocation);
+	UE_LOG(LogTemp, Log, TEXT("ElementFunctionLibrary: DeliverElementToActor -- %s (sort '%s') livre a %s"), *UEnum::GetValueAsString(Element), *SpellId.ToString(), *TargetActor->GetName());
+	Status->ApplyElement(Element, SpellId, SourceActor, ContactLocation);
 	return true;
 }

@@ -8,6 +8,7 @@
 #include "ElementReactionSubsystem.generated.h"
 
 class UElementReactionTable;
+class USpellReactionTable;
 
 // Point d'entree unique pour resoudre une reaction elementaire -- meme precedent que
 // USpellRecognitionSubsystem (charge une fois par session, joignable depuis n'importe ou via
@@ -20,10 +21,18 @@ class MAGE_API UElementReactionSubsystem : public UGameInstanceSubsystem
 public:
 	virtual void Initialize(FSubsystemCollectionBase& Collection) override;
 
-	// Cherche la reaction pour (A,B) ; si trouvee, log + spawn ReactionEffectClass a Location.
-	// Retourne false si aucune ligne ne correspond ou si la table n'est pas chargee.
+	// Cherche d'abord une reaction specifique a la paire de sorts (SpellIdA/SpellIdB) dans
+	// SpellReactionTable, puis retombe sur la paire d'elements (ElementA/ElementB) dans
+	// ReactionTable si aucune ligne specifique au sort n'existe (voir Doc/claude-plan.md). Si
+	// trouvee : log, spawn ReactionEffectClass a Location (avec Setup(TargetActor, SourceActor,
+	// ElementA, ElementB) si c'est un AElementReactionEffectActor), notifie SourceActor via
+	// IElementReactionCarrier s'il l'implemente, et remplit les parametres de sortie decrivant
+	// l'etat a appliquer sur la cible. Retourne false si aucune ligne ne correspond dans aucune des
+	// deux tables.
 	UFUNCTION(BlueprintCallable, Category = "Element")
-	bool TryReact(EElement A, EElement B, FVector Location, AActor* SourceActor);
+	bool TryReact(FName SpellIdA, EElement ElementA, FName SpellIdB, EElement ElementB,
+		AActor* TargetActor, AActor* SourceActor, FVector Location,
+		EElement& OutResultElement, float& OutIntensityMultiplier, bool& OutClearTargetStatus);
 
 private:
 	// Chemin de la table a charger au demarrage -- voir Config/DefaultGame.ini, section
@@ -31,6 +40,14 @@ private:
 	UPROPERTY(config)
 	FSoftObjectPath ReactionTableAssetPath;
 
+	// Optionnelle -- si aucun asset n'est configure (ou pas encore cree, voir Doc/claude-plan.md),
+	// TryReact retombe silencieusement sur ReactionTable seule, comportement identique a aujourd'hui.
+	UPROPERTY(config)
+	FSoftObjectPath SpellReactionTableAssetPath;
+
 	UPROPERTY()
 	TObjectPtr<UElementReactionTable> ReactionTable;
+
+	UPROPERTY()
+	TObjectPtr<USpellReactionTable> SpellReactionTable;
 };
